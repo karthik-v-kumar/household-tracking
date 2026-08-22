@@ -62,7 +62,7 @@ export function AddItemBar({
         submit();
       }}
     >
-      <div className="flex items-center gap-2 rounded-xl bg-surface p-2 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-1 rounded-xl border border-border bg-bg p-1">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -75,7 +75,7 @@ export function AddItemBar({
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="Qty"
-          className="h-11 w-16 shrink-0 border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0"
+          className="h-11 w-14 shrink-0 border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0"
           autoComplete="off"
         />
         <button
@@ -84,23 +84,18 @@ export function AddItemBar({
           aria-label="Remember as usual"
           onClick={() => setStaple((v) => !v)}
           className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-sm",
-            staple ? "text-primary" : "text-subtle hover:text-fg",
+            "grid size-11 shrink-0 place-items-center rounded-full",
+            staple ? "text-fg" : "text-subtle hover:text-fg",
           )}
         >
-          <Star className={cn("size-4", staple && "fill-primary")} />
+          <Star className={cn("size-4", staple && "fill-fg")} />
         </button>
-        <Button
-          type="submit"
-          size="icon"
-          disabled={busy || !trimmed}
-          aria-label="Add item"
-        >
+        <Button type="submit" size="icon" disabled={busy || !trimmed} aria-label="Add item">
           <Plus className="size-4" />
         </Button>
       </div>
       {open ? (
-        <ul className="absolute inset-x-0 bottom-full z-20 mb-2 overflow-hidden rounded-lg bg-surface py-1 shadow-[var(--shadow-card)]">
+        <ul className="panel absolute inset-x-0 bottom-full z-20 mb-2 overflow-hidden py-1">
           {matches.slice(0, 6).map((item) => (
             <li key={item.id}>
               <button

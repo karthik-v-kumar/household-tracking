@@ -1,4 +1,5 @@
 import type { CategoryId, InventoryLevel, ListColorId, ListIconId } from "./constants";
+import type { UpkeepStatus } from "./upkeep-logic";
 
 export type HouseholdRole = "owner" | "member";
 
@@ -66,11 +67,30 @@ export type InventoryItem = {
   onAList: boolean;
 };
 
+export type UpkeepItem = {
+  id: number;
+  name: string;
+  intervalDays: number;
+  lastReplacedAt: string | null;
+  spareCount: number;
+  qtyNeeded: number;
+  defaultListId: number | null;
+  defaultListName: string | null;
+  notes: string | null;
+  onAList: boolean;
+  status: UpkeepStatus;
+  daysUntil: number | null;
+  daysSince: number | null;
+  needToBuy: boolean;
+  buyQty: number;
+};
+
 export type Overview = {
   household: Household;
   members: HouseholdMember[];
   lists: ShoppingList[];
   lowInventory: InventoryItem[];
+  dueUpkeep: UpkeepItem[];
 };
 
 export type ListDetail = {

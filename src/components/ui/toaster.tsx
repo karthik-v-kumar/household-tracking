@@ -7,7 +7,7 @@ export function Toaster() {
       position="top-center"
       toastOptions={{
         classNames: {
-          toast: "bg-surface text-fg border-border shadow-[var(--shadow-card)]",
+          toast: "panel bg-surface text-fg border-border",
         },
       }}
     />

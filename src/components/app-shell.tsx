@@ -15,12 +15,18 @@ const NAV = [
 export function AppShell({
   title,
   eyebrow,
+  stat,
   actions,
+  back,
+  dock,
   children,
 }: {
   title?: string;
   eyebrow?: string;
+  stat?: string;
   actions?: ReactNode;
+  back?: ReactNode;
+  dock?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -28,12 +34,19 @@ export function AppShell({
   const user = useCurrentUser();
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-bg pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur-sm">
+    <div className="mx-auto flex h-dvh w-full max-w-xl flex-col bg-bg">
+      <a
+        href="#main-content"
+        className="sr-only rounded-md bg-surface px-4 py-2 text-fg focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
+      >
+        Skip to content
+      </a>
+
+      <header className="shrink-0 border-b border-border/80 bg-bg px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="truncate text-[11px] font-medium tracking-[0.18em] text-muted uppercase">
-            {eyebrow ?? APP_NAME}
-          </p>
+          <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
+            {APP_NAME}
+          </Link>
           <div className="flex shrink-0 items-center gap-2">
             {actions}
             {isPending ? (
@@ -45,42 +58,52 @@ export function AppShell({
             ) : null}
           </div>
         </div>
-        {title ? (
-          <h1 className="mt-2 truncate font-display text-3xl leading-none font-medium tracking-tight">
-            {title}
-          </h1>
-        ) : null}
+        {back ? <div className="mt-3">{back}</div> : null}
       </header>
 
-      <main className="flex-1 px-5 py-5">{children}</main>
+      <main id="main-content" className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+        {eyebrow ? (
+          <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">
+            {eyebrow}
+          </p>
+        ) : null}
+        {title ? (
+          <h1 className="mt-1 font-display text-4xl leading-[1.05] tracking-tight">{title}</h1>
+        ) : null}
+        {stat ? <p className="mt-2 text-sm text-muted">{stat}</p> : null}
+        <div className={title || eyebrow || stat ? "mt-6" : undefined}>{children}</div>
+      </main>
 
-      <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-surface/95 backdrop-blur-sm"
+      <footer
+        className="shrink-0 border-t border-border bg-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto grid max-w-lg grid-cols-3">
-          {NAV.map((item) => {
-            const active =
-              item.to === "/"
-                ? pathname === "/" || pathname.startsWith("/lists")
-                : pathname === item.to || pathname.startsWith(`${item.to}/`);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium tracking-wide",
-                  active ? "text-primary" : "text-muted",
-                )}
-              >
-                <Icon className="size-5" strokeWidth={active ? 2.2 : 1.75} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+        {dock ? <div className="px-4 pt-3 pb-2">{dock}</div> : null}
+        <nav aria-label="Main">
+          <div className="grid grid-cols-3">
+            {NAV.map((item) => {
+              const active =
+                item.to === "/"
+                  ? pathname === "/" || pathname.startsWith("/lists")
+                  : pathname === item.to || pathname.startsWith(`${item.to}/`);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex min-h-14 flex-col items-center justify-center gap-1 text-xs tracking-wide",
+                    active ? "text-fg" : "text-muted",
+                  )}
+                >
+                  <Icon className="size-5" strokeWidth={active ? 2.1 : 1.6} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </footer>
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function LevelMeter({
             aria-label={step.label}
             onClick={onChange ? () => onChange(step.id) : undefined}
             className={cn(
-              "relative h-2 flex-1 rounded-full transition-colors duration-150",
+              "relative h-2 flex-1 rounded-full transition-colors duration-200",
               isOn ? FILL[level] : "bg-fg/10",
               interactive && "after:absolute after:-inset-y-3 after:inset-x-0",
             )}

@@ -12,6 +12,7 @@ import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { addLowInventoryToLists } from "@/lib/server/inventory";
+import { addNeededUpkeepToLists } from "@/lib/server/upkeep";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -34,6 +35,7 @@ function HomeContent({
   const [newOpen, setNewOpen] = useState(false);
   const queryClient = useQueryClient();
   const low = overview.lowInventory;
+  const due = overview.dueUpkeep ?? [];
   const addLow = useMutation({
     mutationFn: () => addLowInventoryToLists({ data: {} }),
     onSuccess: async (result) => {
@@ -45,6 +47,17 @@ function HomeContent({
     },
     onError: (err: Error) => toast.error(err.message),
   });
+  const addFilters = useMutation({
+    mutationFn: () => addNeededUpkeepToLists({ data: {} }),
+    onSuccess: async (result) => {
+      toast.success(result.added ? `Added ${result.added} to lists` : "Already on a list");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["overview"] }),
+        queryClient.invalidateQueries({ queryKey: ["upkeep"] }),
+      ]);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const remaining = overview.lists.reduce((sum, list) => sum + list.uncheckedCount, 0);
 
@@ -52,26 +65,23 @@ function HomeContent({
     <AppShell
       eyebrow={overview.household.name}
       title="This weekend"
+      stat={
+        remaining === 0
+          ? "Nothing on the lists yet."
+          : `${remaining} item${remaining === 1 ? "" : "s"} still to pick up.`
+      }
       actions={
         <Button size="icon-sm" onClick={() => setNewOpen(true)} aria-label="New list">
           <Plus className="size-4" />
         </Button>
       }
     >
-      <p className="mb-5 text-sm text-muted">
-        {remaining === 0
-          ? "Nothing on the lists yet. Add usuals, or drop in what you noticed running low."
-          : `${remaining} item${remaining === 1 ? "" : "s"} still to pick up.`}
-      </p>
-
       {low.length > 0 ? (
-        <section className="mb-5 rounded-xl bg-surface p-4 shadow-[var(--shadow-card)]">
+        <section className="panel mb-4 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-display text-lg font-medium tracking-tight">Running low</h2>
-              <p className="mt-0.5 text-sm text-muted">
-                {low.map((item) => item.name).join(", ")}
-              </p>
+              <h2 className="font-display text-base font-medium tracking-tight">Running low</h2>
+              <p className="mt-0.5 text-sm text-muted">{low.map((item) => item.name).join(", ")}</p>
             </div>
             <Button
               size="sm"
@@ -79,7 +89,26 @@ function HomeContent({
               disabled={addLow.isPending || low.every((i) => i.onAList)}
               onClick={() => addLow.mutate()}
             >
-              Add to lists
+              Add
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {due.length > 0 ? (
+        <section className="panel mb-4 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-base font-medium tracking-tight">Filters</h2>
+              <p className="mt-0.5 text-sm text-muted">{due.map((item) => item.name).join(", ")}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={addFilters.isPending || due.every((i) => i.onAList || !i.needToBuy)}
+              onClick={() => addFilters.mutate()}
+            >
+              Add
             </Button>
           </div>
         </section>
@@ -98,7 +127,7 @@ function HomeContent({
           }
         />
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-2.5">
           {overview.lists.map((list) => (
             <ListCard key={list.id} list={list} />
           ))}
@@ -108,7 +137,7 @@ function HomeContent({
       <p className="mt-6 text-center text-xs text-subtle">
         Shared with{" "}
         {overview.members.map((m) => (m.isYou ? "you" : m.displayName)).join(" and ")}.{" "}
-        <Link to="/household" className="underline underline-offset-2">
+        <Link to="/household" className="civic-link">
           Invite
         </Link>
       </p>

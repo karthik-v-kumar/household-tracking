@@ -62,3 +62,20 @@ export const QUICK_INVENTORY = [
   { name: "Laundry detergent", category: "household" as const, typicalDays: 70 },
   { name: "Trash bags", category: "household" as const, typicalDays: 35 },
 ];
+
+export const REPLACE_INTERVALS = [
+  { days: 30, label: "Every month" },
+  { days: 60, label: "Every 2 months" },
+  { days: 90, label: "Every 3 months" },
+  { days: 180, label: "Every 6 months" },
+  { days: 365, label: "Every year" },
+] as const;
+
+export const QUICK_FILTERS = [
+  { name: "Furnace air filter", intervalDays: 90, qtyNeeded: 1 },
+  { name: "Air purifier filter", intervalDays: 180, qtyNeeded: 1 },
+  { name: "Fridge water filter", intervalDays: 180, qtyNeeded: 1 },
+  { name: "Vacuum filter", intervalDays: 180, qtyNeeded: 1 },
+  { name: "Air fryer filter", intervalDays: 90, qtyNeeded: 1 },
+  { name: "Tesla Model Y cabin filter", intervalDays: 365, qtyNeeded: 2 },
+] as const;

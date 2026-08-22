@@ -23,7 +23,7 @@ export function ItemRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 border-b border-border/70 px-1 py-1",
+        "flex items-center gap-3 border-b border-border px-1 py-1 last:border-0",
         item.checked && "opacity-55",
       )}
     >
@@ -33,7 +33,7 @@ export function ItemRow({
         aria-pressed={item.checked}
         aria-label={item.checked ? `Uncheck ${item.name}` : `Check ${item.name}`}
         className={cn(
-          "grid size-11 shrink-0 place-items-center rounded-full border transition-colors duration-150",
+          "grid size-11 shrink-0 place-items-center rounded-full border transition-colors duration-200",
           item.checked
             ? "border-primary bg-primary text-primary-fg"
             : "border-fg/25 bg-transparent text-transparent",
@@ -42,12 +42,7 @@ export function ItemRow({
         <Check className="size-4" strokeWidth={2.4} />
       </button>
       <button type="button" onClick={onToggle} className="min-w-0 flex-1 py-2 text-left">
-        <p
-          className={cn(
-            "truncate font-medium",
-            item.checked && "text-muted line-through",
-          )}
-        >
+        <p className={cn("truncate font-medium", item.checked && "text-muted line-through")}>
           {item.name}
         </p>
         <p className="mt-0.5 truncate text-xs text-muted">
@@ -57,13 +52,13 @@ export function ItemRow({
         </p>
       </button>
       {item.isStaple ? (
-        <Star className="size-3.5 shrink-0 fill-primary text-primary" />
+        <Star className="size-3.5 shrink-0 fill-fg text-fg" />
       ) : null}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="grid size-11 shrink-0 place-items-center rounded-sm text-muted hover:bg-fg/5 hover:text-fg"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-fg/6 hover:text-fg"
             aria-label={`More for ${item.name}`}
           >
             <MoreHorizontal className="size-4" />

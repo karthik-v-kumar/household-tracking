@@ -33,13 +33,13 @@ export const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-surface p-5 shadow-[var(--shadow-card)] focus:outline-none",
+        "panel fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,28rem)] -translate-x-1/2 -translate-y-1/2 p-6 focus:outline-none",
         className,
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute top-3 right-3 grid size-9 place-items-center rounded-sm text-muted hover:bg-fg/5 hover:text-fg">
+      <DialogPrimitive.Close className="absolute top-3 right-3 grid size-9 place-items-center rounded-full text-muted hover:bg-fg/6 hover:text-fg">
         <X className="size-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -58,7 +58,7 @@ export function DialogTitle({
 }: ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn("font-display text-xl font-medium tracking-tight text-fg", className)}
+      className={cn("font-display text-2xl tracking-tight text-fg", className)}
       {...props}
     />
   );

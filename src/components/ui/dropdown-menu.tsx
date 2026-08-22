@@ -15,10 +15,7 @@ export const DropdownMenuContent = forwardRef<
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      className={cn(
-        "z-50 min-w-44 overflow-hidden rounded-lg bg-surface p-1 shadow-[var(--shadow-card)]",
-        className,
-      )}
+      className={cn("panel z-50 min-w-44 overflow-hidden p-1", className)}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>
@@ -32,7 +29,7 @@ export const DropdownMenuItem = forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none focus:bg-fg/6 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none select-none focus:bg-fg/6 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       danger ? "text-danger" : "text-fg",
       className,
     )}

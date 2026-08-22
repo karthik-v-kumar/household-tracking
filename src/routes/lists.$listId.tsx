@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MoreHorizontal, RotateCcw, Star } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, ShoppingCart, Star } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AddItemBar } from "@/components/add-item-bar";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { ItemRow } from "@/components/item-row";
+import { LoginPending } from "@/components/login-screen";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +33,6 @@ import type { ListDetail, ListItem } from "@/lib/types";
 import { RedirectToSignIn } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { isUnauthorized } from "@/lib/utils";
-import { ShoppingCart } from "lucide-react";
 
 export const Route = createFileRoute("/lists/$listId")({ component: ListPage });
 
@@ -40,7 +41,7 @@ function ListPage() {
   const id = Number(listId);
   const { user, isPending } = useCurrentUserState();
 
-  if (isPending) return <div className="min-h-dvh bg-bg" />;
+  if (isPending) return <LoginPending />;
   if (!user) return <RedirectToSignIn />;
   if (!Number.isFinite(id)) return <Link to="/">Back to lists</Link>;
 
@@ -68,6 +69,7 @@ function ListBody({ listId }: { listId: number }) {
       queryClient.invalidateQueries({ queryKey }),
       queryClient.invalidateQueries({ queryKey: ["overview"] }),
       queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+      queryClient.invalidateQueries({ queryKey: ["upkeep"] }),
     ]);
   };
 
@@ -153,7 +155,11 @@ function ListBody({ listId }: { listId: number }) {
 
   if (detail.error && isUnauthorized(detail.error)) return <RedirectToSignIn />;
   if (detail.isLoading || !detail.data) {
-    return <div className="min-h-dvh bg-bg" />;
+    return (
+      <AppShell eyebrow="Shopping list" title="Loading…">
+        <div className="panel h-48 animate-pulse" />
+      </AppShell>
+    );
   }
 
   const { list, items, usuals: usualCatalog } = detail.data;
@@ -164,125 +170,119 @@ function ListBody({ listId }: { listId: number }) {
   const missingUsuals = usualCatalog.filter((item) => !item.alreadyOnList).length;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-bg pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur-sm">
-        <div className="flex items-center gap-1">
+    <AppShell
+      eyebrow="Shopping list"
+      title={list.name}
+      stat={
+        openItems.length
+          ? `${openItems.length} to buy${bought.length ? ` · ${bought.length} in the cart` : ""}`
+          : items.length
+            ? "All checked"
+            : "Empty — add this week's run"
+      }
+      back={
+        <div className="flex items-center justify-between gap-3">
           <Link
             to="/"
-            className="grid size-11 place-items-center rounded-sm text-fg hover:bg-fg/5"
-            aria-label="Back to lists"
+            className="civic-link inline-flex items-center gap-1 text-sm text-muted hover:text-fg"
           >
-            <ChevronLeft className="size-5" />
+            <ChevronLeft className="size-4" />
+            Lists
           </Link>
           <div
-            className={`grid size-10 place-items-center rounded-md text-primary-fg ${LIST_COLOR_CLASS[color]}`}
+            className={`grid size-8 place-items-center rounded-full text-primary-fg ${LIST_COLOR_CLASS[color]}`}
+            aria-hidden="true"
           >
             <Icon className="size-4" />
           </div>
-          <div className="min-w-0 flex-1 px-2">
-            <h1 className="truncate font-display text-2xl leading-none font-medium tracking-tight">
-              {list.name}
-            </h1>
-            <p className="mt-1 text-xs text-muted">
-              {openItems.length} to buy
-              {bought.length ? ` · ${bought.length} in the cart` : ""}
-            </p>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="grid size-11 place-items-center rounded-sm text-muted hover:bg-fg/5 hover:text-fg"
-                aria-label="List actions"
-              >
-                <MoreHorizontal className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setEditOpen(true)}>Edit list</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem danger onSelect={() => removeList.mutate()}>
-                Delete list
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-        <div className="mt-3 flex gap-2 px-1">
+      }
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="List actions">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>Edit list</DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={clearBought.isPending || bought.length === 0}
+              onSelect={() => clearBought.mutate()}
+            >
+              Clear bought
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem danger onSelect={() => removeList.mutate()}>
+              Delete list
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+      dock={<AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />}
+    >
+      {missingUsuals > 0 ? (
+        <div className="panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">{missingUsuals} usuals</span>
+            <span className="text-muted"> not on this list</span>
+          </p>
           <Button
-            variant="secondary"
             size="sm"
-            className="flex-1"
-            disabled={usuals.isPending || missingUsuals === 0}
+            variant="secondary"
+            disabled={usuals.isPending}
             onClick={() => usuals.mutate()}
           >
             <Star className="size-3.5" />
-            {missingUsuals ? `Add usuals (${missingUsuals})` : "Usuals added"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            disabled={clearBought.isPending || bought.length === 0}
-            onClick={() => clearBought.mutate()}
-          >
-            <RotateCcw className="size-3.5" />
-            Clear bought
+            Add
           </Button>
         </div>
-      </header>
+      ) : null}
 
-      <main className="flex-1 px-4 py-3">
-        {items.length === 0 ? (
-          <EmptyState
-            icon={ShoppingCart}
-            title="Nothing here yet"
-            body="Add this week's items. Star anything you buy every weekend so it comes back with one tap."
-          />
-        ) : (
-          <>
-            <div>
-              {openItems.map((item) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
-                  onStaple={() => staple.mutate(item)}
-                  onDelete={() => remove.mutate(item.id)}
-                />
-              ))}
-            </div>
-            {bought.length > 0 ? (
-              <section className="mt-6">
-                <h2 className="px-1 text-xs font-medium tracking-[0.16em] text-muted uppercase">
-                  Bought
-                </h2>
-                <div className="mt-1">
-                  {bought.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
-                      onStaple={() => staple.mutate(item)}
-                      onDelete={() => remove.mutate(item.id)}
-                    />
-                  ))}
-                </div>
-              </section>
+      {items.length === 0 ? (
+        <EmptyState
+          icon={ShoppingCart}
+          title="Nothing here yet"
+          body="Add this week's items. Star anything you buy every weekend so it comes back with one tap."
+        />
+      ) : (
+        <>
+          <div className="panel px-3 py-1">
+            {openItems.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                onStaple={() => staple.mutate(item)}
+                onDelete={() => remove.mutate(item.id)}
+              />
+            ))}
+            {openItems.length === 0 ? (
+              <p className="px-2 py-6 text-center text-sm text-muted">Cart is clear. Nice.</p>
             ) : null}
-          </>
-        )}
-      </main>
-
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 px-4 pt-2"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
-      >
-        <div className="mx-auto max-w-lg">
-          <AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />
-        </div>
-      </div>
+          </div>
+          {bought.length > 0 ? (
+            <section className="mt-6">
+              <h2 className="px-1 text-xs font-medium tracking-[0.16em] text-muted uppercase">
+                Bought
+              </h2>
+              <div className="panel mt-2 px-3 py-1">
+                {bought.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                    onStaple={() => staple.mutate(item)}
+                    onDelete={() => remove.mutate(item.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
 
       <NewListDialog open={editOpen} onOpenChange={setEditOpen} list={list} />
-    </div>
+    </AppShell>
   );
 }

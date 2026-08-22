@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate, useOverviewQuery } from "@/components/auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { FilterSegment, FiltersPanel } from "@/components/filters-panel";
 import { LevelMeter } from "@/components/level-meter";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,24 +27,21 @@ import {
   listInventory,
   updateInventoryItem,
 } from "@/lib/server/inventory";
+import { listUpkeep } from "@/lib/server/upkeep";
 import type { InventoryItem } from "@/lib/types";
-import { Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/inventory")({ component: InventoryPage });
 
 function InventoryPage() {
-  return (
-    <AuthGate>
-      {() => <InventoryBody />}
-    </AuthGate>
-  );
+  return <AuthGate>{() => <InventoryBody />}</AuthGate>;
 }
 
 function InventoryBody() {
   const queryClient = useQueryClient();
   const overview = useOverviewQuery();
   const lists = overview.data?.lists ?? [];
+  const [view, setView] = useState<"pantry" | "filters">("pantry");
   const [open, setOpen] = useState(false);
 
   const inventory = useQuery({
@@ -51,9 +49,15 @@ function InventoryBody() {
     queryFn: () => listInventory(),
     refetchInterval: 15_000,
   });
+  const upkeep = useQuery({
+    queryKey: ["upkeep"],
+    queryFn: () => listUpkeep(),
+    refetchInterval: 15_000,
+  });
 
   const items = inventory.data ?? [];
   const low = items.filter((item) => item.effectiveLevel === "low" || item.effectiveLevel === "out");
+  const dueFilters = (upkeep.data ?? []).filter((item) => item.status !== "ok").length;
 
   const invalidate = async () => {
     await Promise.all([
@@ -84,64 +88,84 @@ function InventoryBody() {
 
   return (
     <AppShell
-      title="Inventory"
-      eyebrow="Bulk & slow-burn"
+      title={view === "filters" ? "Filters" : "Pantry"}
+      eyebrow="Inventory"
+      stat={
+        view === "filters"
+          ? dueFilters
+            ? `${dueFilters} need a spare or a change.`
+            : "Replacement schedule and whether you have one on the shelf."
+          : low.length
+            ? `${low.length} running low — add them before the weekend run.`
+            : "Track bulk items. We'll nudge you when a pack is nearly gone."
+      }
       actions={
-        <Button size="icon-sm" onClick={() => setOpen(true)} aria-label="Add inventory item">
+        <Button
+          size="icon-sm"
+          onClick={() => setOpen(true)}
+          aria-label={view === "filters" ? "Add filter" : "Add inventory item"}
+        >
           <Plus className="size-4" />
         </Button>
       }
     >
-      <p className="mb-5 text-sm text-muted">
-        Track things you buy in bulk. When something is low, add it to this weekend's list
-        instead of keeping it in your head.
-      </p>
+      <FilterSegment view={view} onChange={setView} dueCount={dueFilters} />
 
-      {low.length > 0 ? (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 shadow-[var(--shadow-card)]">
-          <p className="text-sm">
-            <span className="font-medium">{low.length} running low</span>
-            <span className="text-muted"> · add them before the weekend run</span>
-          </p>
-          <Button size="sm" variant="secondary" onClick={() => addLow.mutate(undefined)}>
-            Add all
-          </Button>
-        </div>
-      ) : null}
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={Package}
-          title="Nothing tracked yet"
-          body="Start with household bulk — toilet paper, detergent, mouthwash. Set how long a pack usually lasts."
-          action={
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              Add item
-            </Button>
-          }
+      {view === "filters" ? (
+        <FiltersPanel
+          lists={lists.map((l) => ({ id: l.id, name: l.name }))}
+          onAddClick={() => setOpen(true)}
+          addOpen={open}
+          onAddOpenChange={setOpen}
         />
       ) : (
-        <div className="grid gap-3">
-          {items.map((item) => (
-            <InventoryCard
-              key={item.id}
-              item={item}
-              onLevel={(level) => setLevel.mutate({ itemId: item.id, level })}
-              onAdd={() => addLow.mutate([item.id])}
-              onDelete={() => remove.mutate(item.id)}
-            />
-          ))}
-        </div>
-      )}
+        <>
+          {low.length > 0 ? (
+            <div className="panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
+              <p className="text-sm">
+                <span className="font-medium">{low.length} running low</span>
+              </p>
+              <Button size="sm" variant="secondary" onClick={() => addLow.mutate(undefined)}>
+                Add all
+              </Button>
+            </div>
+          ) : null}
 
-      <AddInventoryDialog
-        open={open}
-        onOpenChange={setOpen}
-        lists={lists.map((l) => ({ id: l.id, name: l.name }))}
-        existingNames={items.map((i) => i.name)}
-        onCreated={invalidate}
-      />
+          {items.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="Nothing tracked yet"
+              body="Start with household bulk — toilet paper, detergent, mouthwash. Set how long a pack usually lasts."
+              action={
+                <Button onClick={() => setOpen(true)}>
+                  <Plus className="size-4" />
+                  Add item
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid gap-2.5">
+              {items.map((item) => (
+                <InventoryCard
+                  key={item.id}
+                  item={item}
+                  onLevel={(level) => setLevel.mutate({ itemId: item.id, level })}
+                  onAdd={() => addLow.mutate([item.id])}
+                  onDelete={() => remove.mutate(item.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <AddInventoryDialog
+            open={open}
+            onOpenChange={setOpen}
+            lists={lists.map((l) => ({ id: l.id, name: l.name }))}
+            existingNames={items.map((i) => i.name)}
+            onCreated={invalidate}
+          />
+        </>
+      )}
     </AppShell>
   );
 }
@@ -173,10 +197,10 @@ function InventoryCard({
         : "Set a typical lifespan to get a heads-up";
 
   return (
-    <article className="rounded-xl bg-surface p-4 shadow-[var(--shadow-card)]">
+    <article className="panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-medium">{item.name}</h3>
+          <h3 className="truncate font-display font-medium">{item.name}</h3>
           <p className="mt-0.5 text-xs text-muted">{estimate}</p>
         </div>
         <Badge tone={tone}>
@@ -191,7 +215,7 @@ function InventoryCard({
       </div>
       <div className="mt-4">
         <LevelMeter level={item.level} onChange={onLevel} />
-        <div className="mt-1.5 flex justify-between text-[10px] tracking-wide text-subtle uppercase">
+        <div className="mt-1.5 flex justify-between font-display text-xs tracking-wide text-subtle uppercase">
           <span>Out</span>
           <span>Full</span>
         </div>
@@ -273,7 +297,7 @@ function AddInventoryDialog({
                 })
               }
               className={cn(
-                "rounded-full bg-bg-elevated px-3 py-1.5 text-sm text-fg shadow-[var(--shadow-card)]",
+                "rounded-full border border-border bg-bg-elevated px-3 py-1.5 text-sm text-fg",
               )}
             >
               {item.name}

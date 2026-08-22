@@ -66,18 +66,22 @@ function HouseholdBody({ overview }: { overview: Overview }) {
   }
 
   return (
-    <AppShell title={overview.household.name} eyebrow="Household">
-      <section className="rounded-xl bg-surface p-5 shadow-[var(--shadow-card)]">
-        <h2 className="font-display text-xl font-medium tracking-tight">Invite</h2>
+    <AppShell
+      title={overview.household.name}
+      eyebrow="Household"
+      stat={`${overview.members.length} member${overview.members.length === 1 ? "" : "s"} sharing lists and pantry.`}
+    >
+      <section className="panel p-5">
+        <h2 className="font-display text-2xl tracking-tight">Invite</h2>
         <p className="mt-1 text-sm text-muted">
           Share this code. After they sign in, they join and see the same lists and pantry.
         </p>
         <button
           type="button"
           onClick={() => void copyCode()}
-          className="mt-4 flex w-full items-center justify-between rounded-lg bg-bg-elevated px-4 py-3 text-left"
+          className="mt-4 flex w-full items-center justify-between rounded-md border border-border bg-bg-elevated px-4 py-3 text-left"
         >
-          <span className="font-display text-2xl tracking-[0.18em]">
+          <span className="font-display text-2xl tracking-widest">
             {overview.household.inviteCode}
           </span>
           <Copy className="size-4 text-muted" />
@@ -96,8 +100,8 @@ function HouseholdBody({ overview }: { overview: Overview }) {
         ) : null}
       </section>
 
-      <section className="mt-4 rounded-xl bg-surface p-5 shadow-[var(--shadow-card)]">
-        <h2 className="font-display text-xl font-medium tracking-tight">People</h2>
+      <section className="panel mt-4 p-5">
+        <h2 className="font-display text-2xl tracking-tight">Members</h2>
         <ul className="mt-3 divide-y divide-border">
           {overview.members.map((member) => (
             <li key={member.userId} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
@@ -108,7 +112,7 @@ function HouseholdBody({ overview }: { overview: Overview }) {
                   className="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-fg/10"
                 />
               ) : (
-                <span className="grid size-10 place-items-center rounded-full bg-primary/10 font-medium text-primary">
+                <span className="grid size-10 place-items-center rounded-full bg-primary/10 font-medium text-fg">
                   {member.displayName.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -117,7 +121,9 @@ function HouseholdBody({ overview }: { overview: Overview }) {
                   {member.displayName}
                   {member.isYou ? " (you)" : ""}
                 </p>
-                <p className="text-xs text-muted capitalize">{member.role}</p>
+                <p className="font-display text-xs tracking-wide text-muted uppercase">
+                  {member.role}
+                </p>
               </div>
             </li>
           ))}
@@ -125,7 +131,7 @@ function HouseholdBody({ overview }: { overview: Overview }) {
       </section>
 
       <form
-        className="mt-4 rounded-xl bg-surface p-5 shadow-[var(--shadow-card)]"
+        className="panel mt-4 p-5"
         onSubmit={(event) => {
           event.preventDefault();
           if (!name.trim()) return;
@@ -147,7 +153,7 @@ function HouseholdBody({ overview }: { overview: Overview }) {
 
       <Button
         variant="ghost"
-        className="mt-6 w-full text-danger"
+        className="mt-5 w-full text-danger"
         onClick={() => {
           if (window.confirm("Leave this household? Lists stay with whoever remains.")) {
             leave.mutate();

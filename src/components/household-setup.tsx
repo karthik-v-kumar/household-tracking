@@ -33,25 +33,25 @@ export function HouseholdSetup() {
   });
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-5 py-10">
-      <p className="text-xs font-medium tracking-[0.18em] text-muted uppercase">{APP_NAME}</p>
-      <h1 className="mt-3 font-display text-4xl leading-[0.95] font-medium tracking-tight">
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-6 py-12">
+      <p className="wordmark w-fit">{APP_NAME}</p>
+      <h1 className="mt-10 font-display text-5xl leading-[0.95] tracking-tight">
         Set up your household
       </h1>
-      <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+      <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
         Lists, usuals, and pantry levels are shared. Create a household, then send the invite code
         to your other half.
       </p>
 
       <form
-        className="mt-8 rounded-xl bg-surface p-5 shadow-[var(--shadow-card)]"
+        className="panel mt-8 p-5"
         onSubmit={(event) => {
           event.preventDefault();
           setCreateError(null);
           create.mutate(createName.trim() || "Our kitchen");
         }}
       >
-        <h2 className="font-display text-xl font-medium">Create one</h2>
+        <h2 className="font-display text-2xl">Create one</h2>
         <p className="mt-1 text-sm text-muted">You'll get a short code to share.</p>
         <div className="mt-4 grid gap-1.5">
           <Label htmlFor="household-name">Household name</Label>
@@ -69,14 +69,14 @@ export function HouseholdSetup() {
       </form>
 
       <form
-        className="mt-4 rounded-xl bg-surface p-5 shadow-[var(--shadow-card)]"
+        className="panel mt-4 p-5"
         onSubmit={(event) => {
           event.preventDefault();
           setJoinError(null);
           join.mutate(code);
         }}
       >
-        <h2 className="font-display text-xl font-medium">Join one</h2>
+        <h2 className="font-display text-2xl">Join one</h2>
         <p className="mt-1 text-sm text-muted">Paste the code from someone already signed in.</p>
         <div className="mt-4 grid gap-1.5">
           <Label htmlFor="invite-code">Invite code</Label>
@@ -86,7 +86,7 @@ export function HouseholdSetup() {
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="K7M2-Q9XP"
             autoCapitalize="characters"
-            className="font-medium tracking-[0.18em]"
+            className="tracking-[0.18em]"
           />
         </div>
         {joinError ? <p className="mt-2 text-sm text-danger">{joinError}</p> : null}

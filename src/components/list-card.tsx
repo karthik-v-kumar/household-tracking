@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { listColor, listIcon } from "@/lib/icons";
-import { LIST_COLOR_CLASS } from "@/lib/icons";
+import { listColor, listIcon, LIST_COLOR_CLASS } from "@/lib/icons";
 import type { ShoppingList } from "@/lib/types";
 
 export function ListCard({ list }: { list: ShoppingList }) {
@@ -11,11 +10,9 @@ export function ListCard({ list }: { list: ShoppingList }) {
     <Link
       to="/lists/$listId"
       params={{ listId: String(list.id) }}
-      className="flex items-center gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5"
+      className="panel flex items-center gap-4 p-4 transition-[transform,background-color] duration-200 hover:bg-bg-elevated"
     >
-      <div
-        className={`grid size-12 place-items-center rounded-md text-primary-fg ${LIST_COLOR_CLASS[color]}`}
-      >
+      <div className={`grid size-11 place-items-center rounded-full text-primary-fg ${LIST_COLOR_CLASS[color]}`}>
         <Icon className="size-5" strokeWidth={1.75} />
       </div>
       <div className="min-w-0 flex-1">

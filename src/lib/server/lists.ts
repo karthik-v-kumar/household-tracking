@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { LIST_COLORS, LIST_ICONS } from "@/lib/constants";
 import { levelRank } from "@/lib/inventory-logic";
+import { upkeepRank } from "@/lib/upkeep-logic";
 import type {
   CatalogItem,
   Household,
@@ -22,6 +23,7 @@ import {
   type MembershipRow,
 } from "./access";
 import { mapInventoryRow, type InventoryRow } from "./inventory-map";
+import { mapUpkeepRow, type UpkeepRow } from "./upkeep";
 
 function asListIcon(value: string) {
   return value in Object.fromEntries(LIST_ICONS.map((i) => [i.id, true]))
@@ -121,11 +123,30 @@ export async function getOverviewData(
     `,
   ]);
 
+  let upkeepRows: UpkeepRow[] = [];
+  try {
+    upkeepRows = await sql<UpkeepRow>`
+      select u.id, u.name, u.interval_days, u.last_replaced_at, u.spare_count,
+             u.qty_needed, u.default_list_id, u.notes,
+             l.name as default_list_name
+      from upkeep_items u
+      left join lists l on l.id = u.default_list_id
+      where u.household_id = ${membership.id}
+    `;
+  } catch {
+    upkeepRows = [];
+  }
+
   const onList = new Set(onListRows.map((r) => r.name));
   const lowInventory = inventoryRows
     .map((row) => mapInventoryRow(row, onList.has(row.name.toLowerCase())))
     .filter((item) => item.effectiveLevel === "low" || item.effectiveLevel === "out")
     .sort((a, b) => levelRank(a.effectiveLevel) - levelRank(b.effectiveLevel) || a.name.localeCompare(b.name));
+
+  const dueUpkeep = upkeepRows
+    .map((row) => mapUpkeepRow(row, onList.has(row.name.toLowerCase())))
+    .filter((item) => item.status !== "ok")
+    .sort((a, b) => upkeepRank(a.status) - upkeepRank(b.status) || a.name.localeCompare(b.name));
 
   const household: Household = {
     id: Number(membership.id),
@@ -135,7 +156,7 @@ export async function getOverviewData(
     createdAt: toIso(membership.created_at) ?? new Date().toISOString(),
   };
 
-  return { household, members, lists, lowInventory };
+  return { household, members, lists, lowInventory, dueUpkeep };
 }
 
 export const createList = createServerFn({ method: "POST" })
@@ -457,8 +478,8 @@ export const clearCheckedItems = createServerFn({ method: "POST" })
     const membership = await requireMembership(sql, context.userId);
     await assertListInHousehold(sql, data.listId, membership.id);
 
-    const bought = await sql<{ name: string }>`
-      select name from list_items
+    const bought = await sql<{ name: string; quantity: string | null }>`
+      select name, quantity from list_items
       where list_id = ${data.listId} and household_id = ${membership.id} and checked = true
     `;
 
@@ -468,6 +489,13 @@ export const clearCheckedItems = createServerFn({ method: "POST" })
         set level = ${"full"},
             last_restocked_at = now(),
             updated_at = now()
+        where household_id = ${membership.id} and lower(name) = lower(${item.name})
+      `;
+      const parsed = item.quantity ? Number.parseInt(item.quantity, 10) : NaN;
+      const extra = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+      await sql`
+        update upkeep_items
+        set spare_count = spare_count + ${extra}, updated_at = now()
         where household_id = ${membership.id} and lower(name) = lower(${item.name})
       `;
     }
