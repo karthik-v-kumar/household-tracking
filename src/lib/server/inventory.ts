@@ -61,6 +61,7 @@ export const addInventoryItem = createServerFn({ method: "POST" })
         level: z.string().optional(),
         typicalDays: z.number().int().min(1).max(730).optional().nullable(),
         defaultListId: z.number().int().positive().optional().nullable(),
+        lastRestockedAt: z.string().trim().optional().nullable(),
         notes: z.string().trim().max(160).optional().nullable(),
       })
       .parse(input),
@@ -80,7 +81,12 @@ export const addInventoryItem = createServerFn({ method: "POST" })
     if (existing[0]) throw new Error("That item is already in inventory.");
 
     const level = asLevel(data.level ?? "ok");
-    const restocked = level === "full" || level === "ok";
+    const restocked =
+      data.lastRestockedAt && data.lastRestockedAt.length > 0
+        ? data.lastRestockedAt
+        : level === "full" || level === "ok"
+          ? new Date().toISOString()
+          : null;
     const rows = await sql<{ id: number }>`
       insert into inventory_items (
         household_id, name, category, level, typical_days, last_restocked_at, default_list_id, notes
@@ -90,7 +96,7 @@ export const addInventoryItem = createServerFn({ method: "POST" })
         ${asCategory(data.category ?? "household")},
         ${level},
         ${data.typicalDays ?? null},
-        ${restocked ? new Date().toISOString() : null},
+        ${restocked},
         ${data.defaultListId ?? null},
         ${data.notes ?? null}
       )
@@ -105,9 +111,11 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
     z
       .object({
         itemId: z.number().int().positive(),
+        name: z.string().trim().min(1).max(80).optional(),
         level: z.string().optional(),
         typicalDays: z.number().int().min(1).max(730).optional().nullable(),
         defaultListId: z.number().int().positive().optional().nullable(),
+        lastRestockedAt: z.string().trim().optional().nullable(),
         notes: z.string().trim().max(160).optional().nullable(),
         category: z.string().optional(),
       })
@@ -126,6 +134,21 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
       await assertListInHousehold(sql, data.defaultListId, membership.id);
     }
 
+    if (data.name) {
+      const clash = await sql<{ id: number }>`
+        select id from inventory_items
+        where household_id = ${membership.id}
+          and lower(name) = lower(${data.name})
+          and id <> ${data.itemId}
+        limit 1
+      `;
+      if (clash[0]) throw new Error("That item is already in inventory.");
+      await sql`
+        update inventory_items
+        set name = ${data.name}, updated_at = now()
+        where id = ${data.itemId} and household_id = ${membership.id}
+      `;
+    }
     if (data.level) {
       const level = asLevel(data.level);
       const restock = level === "full";
@@ -154,6 +177,13 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
       await sql`
         update inventory_items
         set default_list_id = ${data.defaultListId}, updated_at = now()
+        where id = ${data.itemId} and household_id = ${membership.id}
+      `;
+    }
+    if (typeof data.lastRestockedAt !== "undefined") {
+      await sql`
+        update inventory_items
+        set last_restocked_at = ${data.lastRestockedAt || null}, updated_at = now()
         where id = ${data.itemId} and household_id = ${membership.id}
       `;
     }

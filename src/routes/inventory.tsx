@@ -8,6 +8,8 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { FilterSegment, FiltersPanel } from "@/components/filters-panel";
 import { LevelMeter } from "@/components/level-meter";
+import { ListPicker } from "@/components/list-picker";
+import { Stepper } from "@/components/stepper";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { QUICK_INVENTORY, type InventoryLevel } from "@/lib/constants";
+import { fromDateInput, toDateInput } from "@/lib/dates";
 import {
   addInventoryItem,
   addLowInventoryToLists,
@@ -33,6 +36,8 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/inventory")({ component: InventoryPage });
 
+const LAST_PRESETS = [30, 45, 60, 90];
+
 function InventoryPage() {
   return <AuthGate>{() => <InventoryBody />}</AuthGate>;
 }
@@ -43,6 +48,7 @@ function InventoryBody() {
   const lists = overview.data?.lists ?? [];
   const [view, setView] = useState<"pantry" | "filters">("pantry");
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<InventoryItem | null>(null);
 
   const inventory = useQuery({
     queryKey: ["inventory"],
@@ -86,6 +92,11 @@ function InventoryBody() {
     onSuccess: invalidate,
   });
 
+  function openCreate() {
+    setEditing(null);
+    setOpen(true);
+  }
+
   return (
     <AppShell
       title={view === "filters" ? "Filters" : "Pantry"}
@@ -102,7 +113,7 @@ function InventoryBody() {
       actions={
         <Button
           size="icon-sm"
-          onClick={() => setOpen(true)}
+          onClick={openCreate}
           aria-label={view === "filters" ? "Add filter" : "Add inventory item"}
         >
           <Plus className="size-4" />
@@ -114,9 +125,12 @@ function InventoryBody() {
       {view === "filters" ? (
         <FiltersPanel
           lists={lists.map((l) => ({ id: l.id, name: l.name }))}
-          onAddClick={() => setOpen(true)}
+          onAddClick={openCreate}
           addOpen={open}
-          onAddOpenChange={setOpen}
+          onAddOpenChange={(next) => {
+            setOpen(next);
+            if (!next) setEditing(null);
+          }}
         />
       ) : (
         <>
@@ -139,7 +153,7 @@ function InventoryBody() {
               title="Nothing tracked yet"
               body="Start with household bulk — toilet paper, detergent, mouthwash. Set how long a pack usually lasts."
               action={
-                <Button onClick={() => setOpen(true)}>
+                <Button onClick={openCreate}>
                   <Plus className="size-4" />
                   Add item
                 </Button>
@@ -153,18 +167,26 @@ function InventoryBody() {
                   item={item}
                   onLevel={(level) => setLevel.mutate({ itemId: item.id, level })}
                   onAdd={() => addLow.mutate([item.id])}
+                  onEdit={() => {
+                    setEditing(item);
+                    setOpen(true);
+                  }}
                   onDelete={() => remove.mutate(item.id)}
                 />
               ))}
             </div>
           )}
 
-          <AddInventoryDialog
+          <InventoryDialog
             open={open}
-            onOpenChange={setOpen}
+            onOpenChange={(next) => {
+              setOpen(next);
+              if (!next) setEditing(null);
+            }}
+            item={editing}
             lists={lists.map((l) => ({ id: l.id, name: l.name }))}
             existingNames={items.map((i) => i.name)}
-            onCreated={invalidate}
+            onSaved={invalidate}
           />
         </>
       )}
@@ -176,11 +198,13 @@ function InventoryCard({
   item,
   onLevel,
   onAdd,
+  onEdit,
   onDelete,
 }: {
   item: InventoryItem;
   onLevel: (level: InventoryLevel) => void;
   onAdd: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const tone =
@@ -201,10 +225,10 @@ function InventoryCard({
   return (
     <article className="panel p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <button type="button" className="min-w-0 text-left" onClick={onEdit}>
           <h3 className="truncate font-display font-medium">{item.name}</h3>
           <p className="mt-0.5 text-xs text-muted">{estimate}</p>
-        </div>
+        </button>
         <Badge tone={tone}>
           {item.effectiveLevel === "out"
             ? "Out"
@@ -232,6 +256,9 @@ function InventoryCard({
         >
           {item.onAList ? "On a list" : "Add to list"}
         </Button>
+        <Button size="sm" variant="ghost" onClick={onEdit}>
+          Edit
+        </Button>
         <Button size="sm" variant="ghost" onClick={onDelete}>
           Remove
         </Button>
@@ -240,45 +267,55 @@ function InventoryCard({
   );
 }
 
-function AddInventoryDialog({
+function InventoryDialog({
   open,
   onOpenChange,
+  item,
   lists,
   existingNames,
-  onCreated,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  item: InventoryItem | null;
   lists: { id: number; name: string }[];
   existingNames: string[];
-  onCreated: () => Promise<unknown>;
+  onSaved: () => Promise<unknown>;
 }) {
   const [name, setName] = useState("");
-  const [typicalDays, setTypicalDays] = useState("45");
-  const [listId, setListId] = useState<number | "">(lists[0]?.id ?? "");
+  const [typicalDays, setTypicalDays] = useState(45);
+  const [listId, setListId] = useState<number | "">("");
+  const [lastRestocked, setLastRestocked] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    setName("");
-    setTypicalDays("45");
-    setListId(lists[0]?.id ?? "");
-  }, [open]);
+    setName(item?.name ?? "");
+    setTypicalDays(item?.typicalDays ?? 45);
+    setListId(item?.defaultListId ?? lists[0]?.id ?? "");
+    setLastRestocked(toDateInput(item?.lastRestockedAt) || toDateInput(new Date().toISOString()));
+  }, [open, item, lists]);
 
   const have = useMemo(
     () => new Set(existingNames.map((n) => n.toLowerCase())),
     [existingNames],
   );
 
-  const create = useMutation({
-    mutationFn: (input: {
-      name: string;
-      typicalDays?: number;
-      defaultListId?: number;
-    }) => addInventoryItem({ data: input }),
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: name.trim(),
+        typicalDays,
+        defaultListId: typeof listId === "number" ? listId : null,
+        lastRestockedAt: lastRestocked ? fromDateInput(lastRestocked) : null,
+      };
+      if (item) {
+        return updateInventoryItem({ data: { itemId: item.id, ...payload } });
+      }
+      return addInventoryItem({ data: payload });
+    },
     onSuccess: async () => {
-      toast.success("Tracked");
-      setName("");
-      await onCreated();
+      toast.success(item ? "Updated" : "Tracked");
+      await onSaved();
       onOpenChange(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -288,44 +325,42 @@ function AddInventoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Track a bulk item</DialogTitle>
+          <DialogTitle>{item ? "Edit item" : "Track a bulk item"}</DialogTitle>
           <DialogDescription>
             We'll nudge you when it is likely running out, based on the last restock.
           </DialogDescription>
         </DialogHeader>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {QUICK_INVENTORY.filter((item) => !have.has(item.name.toLowerCase())).map((item) => {
-            const selected = name.trim().toLowerCase() === item.name.toLowerCase();
-            return (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => {
-                  setName(item.name);
-                  setTypicalDays(String(item.typicalDays));
-                }}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
-                  selected
-                    ? "border-fg bg-primary text-primary-fg"
-                    : "border-border bg-bg-elevated text-fg",
-                )}
-              >
-                {item.name}
-              </button>
-            );
-          })}
-        </div>
+        {!item ? (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {QUICK_INVENTORY.filter((row) => !have.has(row.name.toLowerCase())).map((row) => {
+              const selected = name.trim().toLowerCase() === row.name.toLowerCase();
+              return (
+                <button
+                  key={row.name}
+                  type="button"
+                  onClick={() => {
+                    setName(row.name);
+                    setTypicalDays(row.typicalDays);
+                  }}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
+                    selected
+                      ? "border-fg bg-primary text-primary-fg"
+                      : "border-border bg-bg-elevated text-fg",
+                  )}
+                >
+                  {row.name}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <form
           className="grid gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             if (!name.trim()) return;
-            create.mutate({
-              name: name.trim(),
-              typicalDays: typicalDays ? Number(typicalDays) : undefined,
-              defaultListId: typeof listId === "number" ? listId : undefined,
-            });
+            save.mutate();
           }}
         >
           <div className="grid gap-1.5">
@@ -340,65 +375,49 @@ function AddInventoryDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <p className="text-sm font-medium">Usually lasts</p>
+            <Stepper
+              label="Usually lasts"
+              value={typicalDays}
+              min={1}
+              max={730}
+              suffix="days"
+              editable
+              onChange={setTypicalDays}
+            />
             <div className="flex flex-wrap gap-1.5">
-              {[30, 45, 60, 90].map((days) => {
-                const selected = Number(typicalDays) === days;
+              {LAST_PRESETS.map((days) => {
+                const selected = typicalDays === days;
                 return (
                   <button
                     key={days}
                     type="button"
-                    onClick={() => setTypicalDays(String(days))}
+                    onClick={() => setTypicalDays(days)}
                     className={cn(
-                      "rounded-full border px-3 py-2 text-sm",
+                      "min-h-11 rounded-full border px-3 py-2 text-sm",
                       selected
                         ? "border-fg bg-primary text-primary-fg"
                         : "border-border bg-bg-elevated text-fg",
                     )}
                   >
-                    {days} days
+                    {days}d
                   </button>
                 );
               })}
             </div>
           </div>
           <div className="grid gap-1.5">
-            <p className="text-sm font-medium">Restock at</p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setListId("")}
-                className={cn(
-                  "rounded-full border px-3 py-2 text-sm",
-                  listId === ""
-                    ? "border-fg bg-primary text-primary-fg"
-                    : "border-border bg-bg-elevated text-fg",
-                )}
-              >
-                Any list
-              </button>
-              {lists.map((list) => {
-                const selected = listId === list.id;
-                return (
-                  <button
-                    key={list.id}
-                    type="button"
-                    onClick={() => setListId(list.id)}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm",
-                      selected
-                        ? "border-fg bg-primary text-primary-fg"
-                        : "border-border bg-bg-elevated text-fg",
-                    )}
-                  >
-                    {list.name}
-                  </button>
-                );
-              })}
-            </div>
+            <Label htmlFor="inv-restocked">Last restocked</Label>
+            <Input
+              id="inv-restocked"
+              type="date"
+              value={lastRestocked}
+              max={toDateInput(new Date().toISOString())}
+              onChange={(e) => setLastRestocked(e.target.value)}
+            />
           </div>
-          <Button type="submit" disabled={create.isPending || !name.trim()}>
-            {create.isPending ? "Saving…" : "Add to inventory"}
+          <ListPicker label="Restock at" lists={lists} value={listId} onChange={setListId} />
+          <Button type="submit" disabled={save.isPending || !name.trim()}>
+            {save.isPending ? "Saving…" : item ? "Save changes" : "Add to inventory"}
           </Button>
         </form>
       </DialogContent>

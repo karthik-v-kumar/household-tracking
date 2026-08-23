@@ -136,6 +136,7 @@ export const updateUpkeepItem = createServerFn({ method: "POST" })
     z
       .object({
         itemId: z.number().int().positive(),
+        name: z.string().trim().min(1).max(80).optional(),
         intervalDays: z.number().int().min(7).max(1095).optional(),
         spareCount: z.number().int().min(0).max(24).optional(),
         qtyNeeded: z.number().int().min(1).max(12).optional(),
@@ -157,6 +158,21 @@ export const updateUpkeepItem = createServerFn({ method: "POST" })
       await assertListInHousehold(sql, data.defaultListId, membership.id);
     }
 
+    if (data.name) {
+      const clash = await sql<{ id: number }>`
+        select id from upkeep_items
+        where household_id = ${membership.id}
+          and lower(name) = lower(${data.name})
+          and id <> ${data.itemId}
+        limit 1
+      `;
+      if (clash[0]) throw new Error("That filter is already tracked.");
+      await sql`
+        update upkeep_items
+        set name = ${data.name}, updated_at = now()
+        where id = ${data.itemId} and household_id = ${membership.id}
+      `;
+    }
     if (typeof data.intervalDays === "number") {
       await sql`
         update upkeep_items

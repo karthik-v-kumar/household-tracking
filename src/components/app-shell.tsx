@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ClipboardList, Package, Users } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCurrentUser, useCurrentUserState } from "@/lib/auth/use-current-user";
-import { UserButton } from "@/lib/auth/gates";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { SettingsMenu } from "@/components/settings-menu";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,6 @@ export function AppShell({
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { isPending } = useCurrentUserState();
-  const user = useCurrentUser();
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-xl flex-col overflow-hidden bg-bg overscroll-y-none">
@@ -47,15 +46,13 @@ export function AppShell({
           <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
             {APP_NAME}
           </Link>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             {actions}
             {isPending ? (
               <div className="size-9 animate-pulse rounded-full bg-fg/8" />
-            ) : user ? (
-              <div className="[&>div]:gap-1.5 [&_span.text-sm.font-medium]:hidden [&_button]:text-xs">
-                <UserButton />
-              </div>
-            ) : null}
+            ) : (
+              <SettingsMenu />
+            )}
           </div>
         </div>
         {back ? <div className="mt-3">{back}</div> : null}

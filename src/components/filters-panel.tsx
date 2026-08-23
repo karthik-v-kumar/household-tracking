@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Filter, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
+import { ListPicker } from "@/components/list-picker";
+import { Stepper } from "@/components/stepper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QUICK_FILTERS, REPLACE_INTERVALS } from "@/lib/constants";
+import { fromDateInput, formatShortDate, toDateInput } from "@/lib/dates";
 import { formatUpkeepDue } from "@/lib/upkeep-logic";
 import {
   addNeededUpkeepToLists,
@@ -39,6 +42,7 @@ export function FiltersPanel({
   onAddOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState<UpkeepItem | null>(null);
   const upkeep = useQuery({
     queryKey: ["upkeep"],
     queryFn: () => listUpkeep(),
@@ -46,6 +50,10 @@ export function FiltersPanel({
   });
   const items = upkeep.data ?? [];
   const needed = items.filter((item) => item.needToBuy);
+
+  useEffect(() => {
+    if (addOpen) setEditing(null);
+  }, [addOpen]);
 
   const invalidate = async () => {
     await Promise.all([
@@ -79,6 +87,8 @@ export function FiltersPanel({
     mutationFn: (itemId: number) => deleteUpkeepItem({ data: { itemId } }),
     onSuccess: invalidate,
   });
+
+  const dialogOpen = addOpen || Boolean(editing);
 
   return (
     <>
@@ -118,18 +128,25 @@ export function FiltersPanel({
               onSpare={(spareCount) => patch.mutate({ itemId: item.id, spareCount })}
               onReplaced={() => replaced.mutate(item.id)}
               onAdd={() => addNeeded.mutate([item.id])}
+              onEdit={() => setEditing(item)}
               onDelete={() => remove.mutate(item.id)}
             />
           ))}
         </div>
       )}
 
-      <AddFilterDialog
-        open={addOpen}
-        onOpenChange={onAddOpenChange}
+      <FilterDialog
+        open={dialogOpen}
+        onOpenChange={(next) => {
+          if (!next) {
+            setEditing(null);
+            onAddOpenChange(false);
+          }
+        }}
+        item={editing}
         lists={lists}
-        existingNames={items.map((item) => item.name)}
-        onCreated={invalidate}
+        existingNames={items.map((row) => row.name)}
+        onSaved={invalidate}
       />
     </>
   );
@@ -144,12 +161,14 @@ function FilterCard({
   onSpare,
   onReplaced,
   onAdd,
+  onEdit,
   onDelete,
 }: {
   item: UpkeepItem;
   onSpare: (count: number) => void;
   onReplaced: () => void;
   onAdd: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const tone =
@@ -162,18 +181,20 @@ function FilterCard({
         : item.status === "buy"
           ? "Need spare"
           : "On track";
+  const lastChanged = formatShortDate(item.lastReplacedAt);
 
   return (
     <article className="panel p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <button type="button" className="min-w-0 text-left" onClick={onEdit}>
           <h3 className="truncate font-display font-medium">{item.name}</h3>
           <p className="mt-0.5 text-xs text-muted">
             {intervalLabel(item.intervalDays)}
             {item.qtyNeeded > 1 ? ` · ${item.qtyNeeded} each time` : ""}
           </p>
           <p className="mt-0.5 text-xs text-muted">{formatUpkeepDue(item.daysUntil)}</p>
-        </div>
+          {lastChanged ? <p className="mt-0.5 text-xs text-subtle">Last changed {lastChanged}</p> : null}
+        </button>
         <Badge tone={tone}>{badge}</Badge>
       </div>
 
@@ -214,6 +235,9 @@ function FilterCard({
         >
           {item.onAList ? "On a list" : item.needToBuy ? "Add to list" : "Stocked"}
         </Button>
+        <Button size="sm" variant="ghost" onClick={onEdit}>
+          Edit
+        </Button>
         <Button size="sm" variant="ghost" onClick={onDelete}>
           Remove
         </Button>
@@ -222,54 +246,64 @@ function FilterCard({
   );
 }
 
-function AddFilterDialog({
+function FilterDialog({
   open,
   onOpenChange,
+  item,
   lists,
   existingNames,
-  onCreated,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  item: UpkeepItem | null;
   lists: { id: number; name: string }[];
   existingNames: string[];
-  onCreated: () => Promise<unknown>;
+  onSaved: () => Promise<unknown>;
 }) {
   const warehouse = lists.find((list) => list.name.toLowerCase() === "warehouse");
   const [name, setName] = useState("");
   const [intervalDays, setIntervalDays] = useState(90);
   const [qtyNeeded, setQtyNeeded] = useState(1);
   const [spareCount, setSpareCount] = useState(0);
-  const [listId, setListId] = useState<number | "">(warehouse?.id ?? lists[0]?.id ?? "");
+  const [listId, setListId] = useState<number | "">("");
+  const [lastChanged, setLastChanged] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    setName("");
-    setIntervalDays(90);
-    setQtyNeeded(1);
-    setSpareCount(0);
-    setListId(warehouse?.id ?? lists[0]?.id ?? "");
-  }, [open]);
+    setName(item?.name ?? "");
+    setIntervalDays(item?.intervalDays ?? 90);
+    setQtyNeeded(item?.qtyNeeded ?? 1);
+    setSpareCount(item?.spareCount ?? 0);
+    setListId(item?.defaultListId ?? warehouse?.id ?? lists[0]?.id ?? "");
+    setLastChanged(
+      toDateInput(item?.lastReplacedAt) || toDateInput(new Date().toISOString()),
+    );
+  }, [open, item, lists, warehouse?.id]);
 
   const have = useMemo(
     () => new Set(existingNames.map((n) => n.toLowerCase())),
     [existingNames],
   );
 
-  const create = useMutation({
-    mutationFn: (input: {
-      name: string;
-      intervalDays: number;
-      qtyNeeded?: number;
-      spareCount?: number;
-      defaultListId?: number;
-    }) => addUpkeepItem({ data: input }),
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: name.trim(),
+        intervalDays,
+        qtyNeeded: Math.max(1, qtyNeeded),
+        spareCount: Math.max(0, spareCount),
+        lastReplacedAt: lastChanged ? fromDateInput(lastChanged) : null,
+        defaultListId: typeof listId === "number" ? listId : null,
+      };
+      if (item) {
+        return updateUpkeepItem({ data: { itemId: item.id, ...payload } });
+      }
+      return addUpkeepItem({ data: payload });
+    },
     onSuccess: async () => {
-      toast.success("Tracking");
-      setName("");
-      setQtyNeeded(1);
-      setSpareCount(0);
-      await onCreated();
+      toast.success(item ? "Updated" : "Tracking");
+      await onSaved();
       onOpenChange(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -279,47 +313,43 @@ function AddFilterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Track a filter</DialogTitle>
+          <DialogTitle>{item ? "Edit filter" : "Track a filter"}</DialogTitle>
           <DialogDescription>
-            Set the replacement interval and how many you keep at home. If the shelf is empty, we'll put it on a list.
+            Set when you last changed it — not today, unless you just did.
           </DialogDescription>
         </DialogHeader>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {QUICK_FILTERS.filter((item) => !have.has(item.name.toLowerCase())).map((item) => {
-            const selected = name.trim().toLowerCase() === item.name.toLowerCase();
-            return (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => {
-                  setName(item.name);
-                  setIntervalDays(item.intervalDays);
-                  setQtyNeeded(item.qtyNeeded);
-                }}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
-                  selected
-                    ? "border-fg bg-primary text-primary-fg"
-                    : "border-border bg-bg-elevated text-fg",
-                )}
-              >
-                {item.name}
-              </button>
-            );
-          })}
-        </div>
+        {!item ? (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {QUICK_FILTERS.filter((row) => !have.has(row.name.toLowerCase())).map((row) => {
+              const selected = name.trim().toLowerCase() === row.name.toLowerCase();
+              return (
+                <button
+                  key={row.name}
+                  type="button"
+                  onClick={() => {
+                    setName(row.name);
+                    setIntervalDays(row.intervalDays);
+                    setQtyNeeded(row.qtyNeeded);
+                  }}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
+                    selected
+                      ? "border-fg bg-primary text-primary-fg"
+                      : "border-border bg-bg-elevated text-fg",
+                  )}
+                >
+                  {row.name}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <form
           className="grid gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             if (!name.trim()) return;
-            create.mutate({
-              name: name.trim(),
-              intervalDays,
-              qtyNeeded: Math.max(1, qtyNeeded),
-              spareCount: Math.max(0, spareCount),
-              defaultListId: typeof listId === "number" ? listId : undefined,
-            });
+            save.mutate();
           }}
         >
           <div className="grid gap-1.5">
@@ -334,7 +364,26 @@ function AddFilterDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <p className="text-sm font-medium">Replace</p>
+            <Label htmlFor="filter-changed">Last changed</Label>
+            <Input
+              id="filter-changed"
+              type="date"
+              value={lastChanged}
+              max={toDateInput(new Date().toISOString())}
+              onChange={(e) => setLastChanged(e.target.value)}
+            />
+            <p className="text-xs text-muted">The day you last put a new one in.</p>
+          </div>
+          <div className="grid gap-1.5">
+            <Stepper
+              label="Replace every"
+              value={intervalDays}
+              min={7}
+              max={1095}
+              suffix="days"
+              editable
+              onChange={setIntervalDays}
+            />
             <div className="flex flex-wrap gap-1.5">
               {REPLACE_INTERVALS.map((row) => {
                 const selected = intervalDays === row.days;
@@ -344,7 +393,7 @@ function AddFilterDialog({
                     type="button"
                     onClick={() => setIntervalDays(row.days)}
                     className={cn(
-                      "rounded-full border px-3 py-2 text-sm",
+                      "min-h-11 rounded-full border px-3 py-2 text-sm",
                       selected
                         ? "border-fg bg-primary text-primary-fg"
                         : "border-border bg-bg-elevated text-fg",
@@ -357,100 +406,16 @@ function AddFilterDialog({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Stepper
-              label="Each change"
-              value={qtyNeeded}
-              min={1}
-              onChange={setQtyNeeded}
-            />
-            <Stepper
-              label="On the shelf now"
-              value={spareCount}
-              min={0}
-              onChange={setSpareCount}
-            />
+            <Stepper label="Each change" value={qtyNeeded} min={1} onChange={setQtyNeeded} />
+            <Stepper label="On the shelf now" value={spareCount} min={0} onChange={setSpareCount} />
           </div>
-          <div className="grid gap-1.5">
-            <p className="text-sm font-medium">Buy at</p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setListId("")}
-                className={cn(
-                  "rounded-full border px-3 py-2 text-sm",
-                  listId === ""
-                    ? "border-fg bg-primary text-primary-fg"
-                    : "border-border bg-bg-elevated text-fg",
-                )}
-              >
-                Any list
-              </button>
-              {lists.map((list) => {
-                const selected = listId === list.id;
-                return (
-                  <button
-                    key={list.id}
-                    type="button"
-                    onClick={() => setListId(list.id)}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm",
-                      selected
-                        ? "border-fg bg-primary text-primary-fg"
-                        : "border-border bg-bg-elevated text-fg",
-                    )}
-                  >
-                    {list.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <Button type="submit" disabled={create.isPending || !name.trim()}>
-            {create.isPending ? "Saving…" : "Add filter"}
+          <ListPicker label="Buy at" lists={lists} value={listId} onChange={setListId} />
+          <Button type="submit" disabled={save.isPending || !name.trim()}>
+            {save.isPending ? "Saving…" : item ? "Save changes" : "Add filter"}
           </Button>
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Stepper({
-  label,
-  value,
-  onChange,
-  min = 0,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-}) {
-  return (
-    <div className="grid gap-1.5">
-      <p className="text-sm font-medium">{label}</p>
-      <div className="flex h-11 items-center justify-between rounded-md border border-border bg-bg px-1">
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-label={`Decrease ${label}`}
-          disabled={value <= min}
-          onClick={() => onChange(Math.max(min, value - 1))}
-        >
-          <Minus className="size-3.5" />
-        </Button>
-        <span className="min-w-6 text-center text-sm font-medium tabular-nums">{value}</span>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-label={`Increase ${label}`}
-          onClick={() => onChange(value + 1)}
-        >
-          <Plus className="size-3.5" />
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -470,18 +435,18 @@ export function FilterSegment({
           { id: "pantry", label: "Pantry" },
           { id: "filters", label: "Filters" },
         ] as const
-      ).map((item) => (
+      ).map((row) => (
         <button
-          key={item.id}
+          key={row.id}
           type="button"
-          onClick={() => onChange(item.id)}
+          onClick={() => onChange(row.id)}
           className={cn(
             "flex-1 rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-200",
-            view === item.id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg",
+            view === row.id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg",
           )}
         >
-          {item.label}
-          {item.id === "filters" && dueCount > 0 ? ` · ${dueCount}` : ""}
+          {row.label}
+          {row.id === "filters" && dueCount > 0 ? ` · ${dueCount}` : ""}
         </button>
       ))}
     </div>
