@@ -22,6 +22,11 @@ export const LIST_ICONS = [
   { id: "package", label: "Bulk" },
   { id: "bath", label: "Home" },
   { id: "milk", label: "Dairy" },
+  { id: "shopping-bag", label: "Shop" },
+  { id: "map-pin", label: "Errand" },
+  { id: "wrench", label: "Hardware" },
+  { id: "car", label: "Auto" },
+  { id: "heart", label: "Pets" },
 ] as const;
 
 export type ListIconId = (typeof LIST_ICONS)[number]["id"];

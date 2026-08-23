@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MoreHorizontal, ShoppingCart, Star } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AddItemBar } from "@/components/add-item-bar";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ItemRow } from "@/components/item-row";
 import { LoginPending } from "@/components/login-screen";
 import { NewListDialog } from "@/components/new-list-dialog";
+import { UsualsTray } from "@/components/usuals-tray";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,7 +34,7 @@ import {
 import type { ListDetail, ListItem } from "@/lib/types";
 import { RedirectToSignIn } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { isUnauthorized } from "@/lib/utils";
+import { cn, isUnauthorized } from "@/lib/utils";
 
 export const Route = createFileRoute("/lists/$listId")({ component: ListPage });
 
@@ -56,6 +58,8 @@ function ListBody({ listId }: { listId: number }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [draggingUsual, setDraggingUsual] = useState(false);
   const queryKey = ["list", listId] as const;
 
   const detail = useQuery({
@@ -83,11 +87,51 @@ function ListBody({ listId }: { listId: number }) {
           isStaple: input.isStaple,
         },
       }),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<ListDetail>(queryKey);
+      if (previous) {
+        const key = input.name.toLowerCase();
+        const existing = previous.items.find((item) => item.name.toLowerCase() === key);
+        queryClient.setQueryData<ListDetail>(queryKey, {
+          ...previous,
+          items: existing
+            ? previous.items.map((item) =>
+                item.id === existing.id
+                  ? { ...item, checked: false, isStaple: input.isStaple || item.isStaple }
+                  : item,
+              )
+            : [
+                {
+                  id: -Date.now(),
+                  listId,
+                  catalogItemId: null,
+                  name: input.name,
+                  quantity: input.quantity ?? null,
+                  notes: null,
+                  checked: false,
+                  isStaple: input.isStaple,
+                  addedBy: "",
+                  addedByName: "You",
+                  createdAt: new Date().toISOString(),
+                },
+                ...previous.items,
+              ],
+          usuals: previous.usuals.map((usual) =>
+            usual.name.toLowerCase() === key ? { ...usual, alreadyOnList: true } : usual,
+          ),
+        });
+      }
+      return { previous };
+    },
+    onError: (err: Error, _input, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+      toast.error(err.message);
+    },
     onSuccess: async (result) => {
       if (result.already) toast.message("Already on the list");
       await invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const toggle = useMutation({
@@ -147,6 +191,7 @@ function ListBody({ listId }: { listId: number }) {
   const removeList = useMutation({
     mutationFn: () => deleteList({ data: { listId } }),
     onSuccess: async () => {
+      toast.success("List deleted");
       await queryClient.invalidateQueries({ queryKey: ["overview"] });
       void navigate({ to: "/" });
     },
@@ -167,7 +212,6 @@ function ListBody({ listId }: { listId: number }) {
   const color = listColor(list.color);
   const openItems = items.filter((item) => !item.checked);
   const bought = items.filter((item) => item.checked);
-  const missingUsuals = usualCatalog.filter((item) => !item.alreadyOnList).length;
 
   return (
     <AppShell
@@ -184,6 +228,7 @@ function ListBody({ listId }: { listId: number }) {
         <div className="flex items-center justify-between gap-3">
           <Link
             to="/"
+            aria-label="Back to lists"
             className="civic-link inline-flex items-center gap-1 text-sm text-muted hover:text-fg"
           >
             <ChevronLeft className="size-4" />
@@ -213,76 +258,88 @@ function ListBody({ listId }: { listId: number }) {
               Clear bought
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem danger onSelect={() => removeList.mutate()}>
+            <DropdownMenuItem danger onSelect={() => setDeleteOpen(true)}>
               Delete list
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       }
-      dock={<AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />}
-    >
-      {missingUsuals > 0 ? (
-        <div className="panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
-          <p className="text-sm">
-            <span className="font-medium">{missingUsuals} usuals</span>
-            <span className="text-muted"> not on this list</span>
-          </p>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={usuals.isPending}
-            onClick={() => usuals.mutate()}
-          >
-            <Star className="size-3.5" />
-            Add
-          </Button>
-        </div>
-      ) : null}
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={ShoppingCart}
-          title="Nothing here yet"
-          body="Add this week's items. Star anything you buy every weekend so it comes back with one tap."
-        />
-      ) : (
+      dock={
         <>
-          <div className="panel px-3 py-1">
-            {openItems.map((item) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
-                onStaple={() => staple.mutate(item)}
-                onDelete={() => remove.mutate(item.id)}
-              />
-            ))}
-            {openItems.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted">Cart is clear. Nice.</p>
-            ) : null}
-          </div>
-          {bought.length > 0 ? (
-            <section className="mt-6">
-              <h2 className="px-1 text-xs font-medium tracking-[0.16em] text-muted uppercase">
-                Bought
-              </h2>
-              <div className="panel mt-2 px-3 py-1">
-                {bought.map((item) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
-                    onStaple={() => staple.mutate(item)}
-                    onDelete={() => remove.mutate(item.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
+          <UsualsTray
+            usuals={usualCatalog}
+            onAdd={(name) => add.mutate({ name, isStaple: true })}
+            onAddRemaining={() => usuals.mutate()}
+            onDraggingChange={setDraggingUsual}
+            busy={add.isPending || usuals.isPending}
+          />
+          <AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />
         </>
-      )}
+      }
+    >
+      <div
+        data-usuals-drop
+        className={cn("min-h-32", draggingUsual && "rounded-lg")}
+      >
+        {items.length === 0 ? (
+          <EmptyState
+            icon={ShoppingCart}
+            title="Nothing here yet"
+            body={
+              usualCatalog.length
+                ? "Tap a usual in the tray, or drag it onto the list. You do not have to take all of them this week."
+                : "Add this week's items. Star anything you buy often — it lands in the tray next time."
+            }
+          />
+        ) : (
+          <>
+            <div className="panel px-3 py-1">
+              {openItems.map((item) => (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                  onStaple={() => staple.mutate(item)}
+                  onDelete={() => remove.mutate(item.id)}
+                />
+              ))}
+              {openItems.length === 0 ? (
+                <p className="px-2 py-6 text-center text-sm text-muted">Cart is clear. Nice.</p>
+              ) : null}
+            </div>
+            {bought.length > 0 ? (
+              <section className="mt-6">
+                <h2 className="px-1 text-xs font-medium tracking-[0.16em] text-muted uppercase">
+                  Bought
+                </h2>
+                <div className="panel mt-2 px-3 py-1">
+                  {bought.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                      onStaple={() => staple.mutate(item)}
+                      onDelete={() => remove.mutate(item.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </>
+        )}
+      </div>
 
       <NewListDialog open={editOpen} onOpenChange={setEditOpen} list={list} />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${list.name}?`}
+        description="Items on this list will be removed. Usuals stay in the catalog."
+        confirmLabel="Delete list"
+        danger
+        busy={removeList.isPending}
+        onConfirm={() => removeList.mutate()}
+      />
     </AppShell>
   );
 }

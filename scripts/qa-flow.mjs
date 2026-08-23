@@ -30,7 +30,23 @@ try {
   await page.locator("#household-name").fill("Test kitchen");
   await page.getByRole("button", { name: "Create household" }).click();
   await page.getByRole("heading", { name: "This weekend" }).waitFor({ timeout: 20000 });
+  await page.getByRole("button", { name: /farmers market/ }).waitFor({ timeout: 10000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-home.png" });
+
+  await page.getByRole("button", { name: /farmers market/ }).click();
+  await page.locator("#list-name").fill("Costco");
+  await page.getByRole("button", { name: "Warehouse" }).click();
+  await page.getByRole("button", { name: "Create list" }).click();
+  await page.getByRole("heading", { name: "Costco" }).waitFor({ timeout: 15000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-new-list.png" });
+
+  await page.getByRole("link", { name: "Back to lists" }).click();
+  await page.getByRole("heading", { name: "This weekend" }).waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "Pharmacy list actions" }).click();
+  await page.getByRole("menuitem", { name: "Delete list" }).click();
+  await page.getByRole("button", { name: "Delete list" }).click();
+  await page.getByRole("link", { name: /Pharmacy/ }).waitFor({ state: "hidden", timeout: 10000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-home-after-delete.png" });
 
   await page.getByRole("link", { name: /Grocery/ }).click();
   await page.getByPlaceholder("Add milk, limes…").waitFor({ timeout: 10000 });
@@ -44,9 +60,18 @@ try {
   await page.getByRole("button", { name: "Check Oat milk" }).click();
   await page.screenshot({ path: "/workspace/screenshots/qa-list.png" });
 
+  await page.getByRole("button", { name: "List actions" }).click();
+  await page.getByRole("menuitem", { name: "Clear bought" }).click();
+  await page.getByRole("button", { name: "Add Oat milk to list" }).waitFor({ timeout: 10000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-tray.png" });
+  await page.getByRole("button", { name: "Add Oat milk to list" }).click();
+  await page.getByRole("button", { name: "Check Oat milk" }).waitFor({ timeout: 10000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-tray-added.png" });
+
   await page.getByRole("link", { name: "Back to lists" }).click();
+  await page.getByRole("heading", { name: "This weekend" }).waitFor({ timeout: 10000 });
   await page.getByRole("link", { name: "Inventory" }).click();
-  await page.getByRole("heading", { name: "Inventory" }).waitFor({ timeout: 10000 });
+  await page.getByRole("heading", { name: "Pantry" }).waitFor({ timeout: 10000 });
   await page.getByRole("button", { name: "Add inventory item" }).click();
   await page.getByRole("button", { name: "Toilet paper" }).click();
   await page.getByText("Toilet paper").first().waitFor({ timeout: 10000 });

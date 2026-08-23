@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
-import { ListCard } from "@/components/list-card";
+import { ListCard, NewListCard } from "@/components/list-card";
 import { LoginPending, LoginScreen } from "@/components/login-screen";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { addLowInventoryToLists } from "@/lib/server/inventory";
+import { deleteList } from "@/lib/server/lists";
 import { addNeededUpkeepToLists } from "@/lib/server/upkeep";
+import type { ShoppingList } from "@/lib/types";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -33,6 +36,9 @@ function HomeContent({
   overview: import("@/lib/types").Overview;
 }) {
   const [newOpen, setNewOpen] = useState(false);
+  const [editing, setEditing] = useState<ShoppingList | null>(null);
+  const [deleting, setDeleting] = useState<ShoppingList | null>(null);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const low = overview.lowInventory;
   const due = overview.dueUpkeep ?? [];
@@ -58,6 +64,15 @@ function HomeContent({
     },
     onError: (err: Error) => toast.error(err.message),
   });
+  const removeList = useMutation({
+    mutationFn: (listId: number) => deleteList({ data: { listId } }),
+    onSuccess: async () => {
+      toast.success("List deleted");
+      setDeleting(null);
+      await queryClient.invalidateQueries({ queryKey: ["overview"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const remaining = overview.lists.reduce((sum, list) => sum + list.uncheckedCount, 0);
 
@@ -71,7 +86,7 @@ function HomeContent({
           : `${remaining} item${remaining === 1 ? "" : "s"} still to pick up.`
       }
       actions={
-        <Button size="icon-sm" onClick={() => setNewOpen(true)} aria-label="New list">
+        <Button size="icon-sm" onClick={() => { setEditing(null); setNewOpen(true); }} aria-label="New list">
           <Plus className="size-4" />
         </Button>
       }
@@ -120,7 +135,12 @@ function HomeContent({
           title="No lists yet"
           body="Make one per store so you are not hunting through a single giant reminder."
           action={
-            <Button onClick={() => setNewOpen(true)}>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setNewOpen(true);
+              }}
+            >
               <Plus className="size-4" />
               New list
             </Button>
@@ -129,8 +149,22 @@ function HomeContent({
       ) : (
         <div className="grid gap-2.5">
           {overview.lists.map((list) => (
-            <ListCard key={list.id} list={list} />
+            <ListCard
+              key={list.id}
+              list={list}
+              onEdit={() => {
+                setNewOpen(false);
+                setEditing(list);
+              }}
+              onDelete={() => setDeleting(list)}
+            />
           ))}
+          <NewListCard
+            onClick={() => {
+              setEditing(null);
+              setNewOpen(true);
+            }}
+          />
         </div>
       )}
 
@@ -142,7 +176,31 @@ function HomeContent({
         </Link>
       </p>
 
-      <NewListDialog open={newOpen} onOpenChange={setNewOpen} />
+      <NewListDialog
+        open={newOpen || Boolean(editing)}
+        list={editing}
+        onOpenChange={(open) => {
+          if (!open) {
+            setNewOpen(false);
+            setEditing(null);
+          }
+        }}
+        onCreated={(id) => {
+          void navigate({ to: "/lists/$listId", params: { listId: String(id) } });
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={deleting ? `Delete ${deleting.name}?` : "Delete list?"}
+        description="Items on this list will be removed. Usuals stay in the catalog so you can add them somewhere else."
+        confirmLabel="Delete list"
+        danger
+        busy={removeList.isPending}
+        onConfirm={() => deleting && removeList.mutate(deleting.id)}
+      />
     </AppShell>
   );
 }

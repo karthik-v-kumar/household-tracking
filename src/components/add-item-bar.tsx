@@ -43,15 +43,17 @@ export function AddItemBar({
   function submit(item?: CatalogItem) {
     const value = (item?.name ?? trimmed).trim();
     if (!value) return;
-    onAdd({
-      name: value,
-      quantity: quantity.trim() || undefined,
-      isStaple: item?.isStaple || staple,
-    });
+    const asStaple = Boolean(item?.isStaple || staple);
+    const qty = quantity.trim() || undefined;
     setName("");
     setQuantity("");
     setStaple(false);
     setOpen(false);
+    onAdd({
+      name: value,
+      quantity: qty,
+      isStaple: asStaple,
+    });
   }
 
   return (

@@ -2,14 +2,19 @@ import type { LucideIcon } from "lucide-react";
 import {
   Apple,
   Bath,
+  Car,
   Coffee,
+  Heart,
+  MapPin,
   Milk,
   Package,
   Pill,
+  ShoppingBag,
   ShoppingCart,
   Store,
   Warehouse,
   Leaf,
+  Wrench,
 } from "lucide-react";
 import type { ListColorId, ListIconId } from "@/lib/constants";
 
@@ -24,6 +29,11 @@ export const LIST_ICON_MAP: Record<ListIconId, LucideIcon> = {
   package: Package,
   bath: Bath,
   milk: Milk,
+  "shopping-bag": ShoppingBag,
+  "map-pin": MapPin,
+  wrench: Wrench,
+  car: Car,
+  heart: Heart,
 };
 
 export const LIST_COLOR_CLASS: Record<ListColorId, string> = {

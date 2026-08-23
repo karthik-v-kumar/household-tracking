@@ -78,7 +78,7 @@ export function AppShell({
         className="shrink-0 border-t border-border bg-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {dock ? <div className="px-4 pt-3 pb-2">{dock}</div> : null}
+        {dock ? <div className="space-y-2 px-4 pt-3 pb-2">{dock}</div> : null}
         <nav aria-label="Main">
           <div className="grid grid-cols-3">
             {NAV.map((item) => {

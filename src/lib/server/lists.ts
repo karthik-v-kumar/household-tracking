@@ -279,7 +279,7 @@ export const getListDetail = createServerFn({ method: "GET" })
         and (default_list_id = ${data.listId} or default_list_id is null)
       order by name asc
     `;
-    const onList = new Set(items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+    const onList = new Set(items.map((i) => i.name.toLowerCase()));
     const usuals = usualRows.map((row) => ({
       id: Number(row.id),
       name: row.name,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LIST_COLORS, LIST_ICONS, type ListColorId, type ListIconId } from "@/lib/constants";
@@ -21,15 +21,24 @@ export function NewListDialog({
   open,
   onOpenChange,
   list,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   list?: ShoppingList | null;
+  onCreated?: (id: number) => void;
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(list?.name ?? "");
   const [icon, setIcon] = useState<ListIconId>(list?.icon ?? "shopping-cart");
   const [color, setColor] = useState<ListColorId>(list?.color ?? "sage");
+
+  useEffect(() => {
+    if (!open) return;
+    setName(list?.name ?? "");
+    setIcon(list?.icon ?? "shopping-cart");
+    setColor(list?.color ?? "sage");
+  }, [open, list]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -38,32 +47,25 @@ export function NewListDialog({
       }
       return createList({ data: { name: name.trim(), icon, color } });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       toast.success(list ? "List updated" : "List created");
-      await queryClient.invalidateQueries({ queryKey: ["overview"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["overview"] }),
+        list ? queryClient.invalidateQueries({ queryKey: ["list", list.id] }) : Promise.resolve(),
+      ]);
       onOpenChange(false);
-      setName("");
+      if (!list && "id" in result) onCreated?.(result.id);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (next && list) {
-          setName(list.name);
-          setIcon(list.icon);
-          setColor(list.color);
-        }
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{list ? "Edit list" : "New list"}</DialogTitle>
           <DialogDescription>
-            One list per store keeps the weekend run from turning into a jumble.
+            One list per store — grocery, warehouse, Costco, the farmers market, wherever you shop.
           </DialogDescription>
         </DialogHeader>
         <form
