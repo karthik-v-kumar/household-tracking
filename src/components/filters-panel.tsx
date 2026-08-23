@@ -98,6 +98,8 @@ export function FiltersPanel({
       {items.length === 0 ? (
         <EmptyState
           icon={Filter}
+          image="/images/filter.jpg"
+          imageAlt="A pleated furnace air filter"
           title="No filters yet"
           body="Furnace, fridge, cabin air — set how often they change and whether you keep a spare at home. If you don't, it goes on a list."
           action={

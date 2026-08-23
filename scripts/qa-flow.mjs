@@ -20,6 +20,8 @@ const password = "stocked-qa-pass";
 try {
   await page.goto(base, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.getByRole("heading", { name: /Weekend lists/ }).waitFor({ timeout: 15000 });
+  const hero = page.locator('img[alt*="Swiss chard"]');
+  await hero.waitFor({ timeout: 5000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-landing.png" });
   await page.getByRole("button", { name: "New here? Create an account" }).click();
   await page.locator("#name").fill("QA Tester");

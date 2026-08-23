@@ -132,6 +132,8 @@ function HomeContent({
       {overview.lists.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
+          image="/images/produce.jpg"
+          imageAlt="Produce and eggs"
           title="No lists yet"
           body="Make one per store so you are not hunting through a single giant reminder."
           action={

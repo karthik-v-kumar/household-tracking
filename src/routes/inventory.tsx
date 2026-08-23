@@ -134,6 +134,8 @@ function InventoryBody() {
           {items.length === 0 ? (
             <EmptyState
               icon={Package}
+              image="/images/paper.jpg"
+              imageAlt="Paper towels and toilet paper"
               title="Nothing tracked yet"
               body="Start with household bulk — toilet paper, detergent, mouthwash. Set how long a pack usually lasts."
               action={

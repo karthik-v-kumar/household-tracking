@@ -1,36 +1,27 @@
 import { useState, type FormEvent } from "react";
-import { Pill, ShoppingCart, Warehouse } from "lucide-react";
 import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { APP_NAME } from "@/lib/constants";
-import { LIST_COLOR_CLASS } from "@/lib/icons";
-import { cn } from "@/lib/utils";
 
-const PREVIEW_LISTS = [
+const CATALOG = [
   {
-    name: "Grocery",
-    hint: "Milk, eggs, bananas",
-    count: "6 to buy",
-    color: "sage" as const,
-    Icon: ShoppingCart,
+    src: "/images/paper.jpg",
+    alt: "Unbranded paper towels and toilet paper on a cream surface",
+    caption: "The house",
   },
   {
-    name: "Warehouse",
-    hint: "Paper towels, sparkling water",
-    count: "2 to buy",
-    color: "clay" as const,
-    Icon: Warehouse,
+    src: "/images/filter.jpg",
+    alt: "A pleated furnace air filter standing on a cream surface",
+    caption: "Filters",
   },
   {
-    name: "Pharmacy",
-    hint: "Vitamins",
-    count: "1 to buy",
-    color: "wine" as const,
-    Icon: Pill,
+    src: "/images/pharmacy.jpg",
+    alt: "An amber vitamin bottle, a white pill bottle, and a few tablets",
+    caption: "Pharmacy",
   },
-];
+] as const;
 
 const BEATS = [
   {
@@ -103,39 +94,42 @@ export function LoginScreen() {
         <br />
         A pantry that remembers.
       </h1>
-      <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
+
+      <figure className="still-life mt-7">
+        <img
+          src="/images/produce.jpg"
+          alt="Swiss chard, lemons, vine tomatoes, and a carton of brown eggs"
+          width={1400}
+          height={1050}
+          className="aspect-[4/3] w-full object-cover"
+        />
+      </figure>
+
+      <p className="mt-5 max-w-md text-base leading-relaxed text-muted">
         Two phones, one household. Shop by store, tap in this week's usuals, and let
         empty shelves write themselves onto a list.
       </p>
 
-      <section className="mt-7" aria-label="A look inside">
-        <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">A look inside</p>
-        <div className="panel mt-3 overflow-hidden">
-          {PREVIEW_LISTS.map((list, index) => (
-            <div
-              key={list.name}
-              className={cn(
-                "flex items-center gap-3.5 px-4 py-3",
-                index > 0 && "border-t border-border/80",
-              )}
-            >
-              <div
-                className={cn(
-                  "grid size-10 place-items-center rounded-full text-primary-fg",
-                  LIST_COLOR_CLASS[list.color],
-                )}
-              >
-                <list.Icon className="size-5" strokeWidth={1.75} />
+      <ul className="mt-6 grid grid-cols-3 gap-2.5">
+        {CATALOG.map((item) => (
+          <li key={item.src}>
+            <figure>
+              <div className="still-life">
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  width={900}
+                  height={900}
+                  className="aspect-square w-full object-cover"
+                />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{list.name}</p>
-                <p className="mt-0.5 truncate text-sm text-muted">{list.hint}</p>
-              </div>
-              <p className="shrink-0 text-sm text-muted">{list.count}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+              <figcaption className="mt-2 text-xs font-medium tracking-[0.08em] text-muted uppercase">
+                {item.caption}
+              </figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
 
       <section id="signin" className="mt-8">
         <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">

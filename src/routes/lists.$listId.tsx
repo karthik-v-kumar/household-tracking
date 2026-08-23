@@ -284,6 +284,8 @@ function ListBody({ listId }: { listId: number }) {
         {items.length === 0 ? (
           <EmptyState
             icon={ShoppingCart}
+            image="/images/eggs.jpg"
+            imageAlt="A carton of brown eggs"
             title="Nothing here yet"
             body={
               usualCatalog.length

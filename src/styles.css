@@ -117,6 +117,16 @@
     border-radius: var(--radius-lg);
   }
 
+  .still-life {
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-bg-elevated);
+  }
+
+  .still-life img {
+    display: block;
+  }
+
   .overlay-surface {
     background-color: var(--color-surface);
     color: var(--color-fg);
