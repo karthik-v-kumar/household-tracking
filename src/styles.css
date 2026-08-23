@@ -158,7 +158,7 @@
 
   /* Status bar / Dynamic Island only. Preview chrome is gone on the live site. */
   .edge-top {
-    padding-top: calc(env(safe-area-inset-top) + 1rem);
+    padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 
   .overlay-surface {
