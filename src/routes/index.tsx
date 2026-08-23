@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ListCard, NewListCard } from "@/components/list-card";
 import { LoginPending } from "@/components/login-screen";
 import { LandingPage } from "@/components/landing-page";
+import { ShareInviteBanner } from "@/components/share-invite";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -92,6 +93,7 @@ function HomeContent({
         </Button>
       }
     >
+      <ShareInviteBanner overview={overview} />
       {low.length > 0 ? (
         <section className="panel mb-4 p-4">
           <div className="flex items-start justify-between gap-3">

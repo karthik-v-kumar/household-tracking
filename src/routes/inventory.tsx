@@ -53,12 +53,10 @@ function InventoryBody() {
   const inventory = useQuery({
     queryKey: ["inventory"],
     queryFn: () => listInventory(),
-    refetchInterval: 15_000,
   });
   const upkeep = useQuery({
     queryKey: ["upkeep"],
     queryFn: () => listUpkeep(),
-    refetchInterval: 15_000,
   });
 
   const items = inventory.data ?? [];

@@ -83,3 +83,7 @@ export function generateInviteCode(): string {
   }
   return `${raw.slice(0, 4)}-${raw.slice(4)}`;
 }
+
+export async function touchHousehold(sql: Sql, householdId: number): Promise<void> {
+  await sql`update households set updated_at = now() where id = ${householdId}`;
+}

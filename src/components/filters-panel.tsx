@@ -47,7 +47,6 @@ export function FiltersPanel({
   const upkeep = useQuery({
     queryKey: ["upkeep"],
     queryFn: () => listUpkeep(),
-    refetchInterval: 15_000,
   });
   const items = upkeep.data ?? [];
   const needed = items.filter((item) => item.needToBuy);

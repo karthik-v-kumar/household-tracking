@@ -20,6 +20,7 @@ import {
   getSqlClient,
   requireMembership,
   toIso,
+  touchHousehold,
   type MembershipRow,
 } from "./access";
 import { mapInventoryRow, type InventoryRow } from "./inventory-map";
@@ -184,6 +185,7 @@ export const createList = createServerFn({ method: "POST" })
       values (${membership.id}, ${data.name}, ${icon}, ${color}, ${sortOrder})
       returning id
     `;
+    await touchHousehold(sql, membership.id);
     return { id: Number(rows[0]!.id) };
   });
 
@@ -208,6 +210,7 @@ export const updateList = createServerFn({ method: "POST" })
       set name = ${data.name}, icon = ${asListIcon(data.icon)}, color = ${asListColor(data.color)}
       where id = ${data.listId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -221,6 +224,7 @@ export const deleteList = createServerFn({ method: "POST" })
     const membership = await requireMembership(sql, context.userId);
     await assertListInHousehold(sql, data.listId, membership.id);
     await sql`delete from lists where id = ${data.listId} and household_id = ${membership.id}`;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -365,6 +369,7 @@ export const addListItem = createServerFn({ method: "POST" })
               catalog_item_id = ${catalogId}
           where id = ${found.id} and household_id = ${membership.id}
         `;
+        await touchHousehold(sql, membership.id);
         return { id: Number(found.id), revived: true };
       }
       return { id: Number(found.id), already: true };
@@ -379,6 +384,7 @@ export const addListItem = createServerFn({ method: "POST" })
       )
       returning id
     `;
+    await touchHousehold(sql, membership.id);
     return { id: Number(rows[0]!.id), already: false };
   });
 
@@ -395,6 +401,7 @@ export const toggleListItem = createServerFn({ method: "POST" })
       set checked = ${data.checked}
       where id = ${data.itemId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -451,6 +458,7 @@ export const updateListItem = createServerFn({ method: "POST" })
         `;
       }
     }
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -465,6 +473,7 @@ export const deleteListItem = createServerFn({ method: "POST" })
     await sql`
       delete from list_items where id = ${data.itemId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -505,6 +514,7 @@ export const clearCheckedItems = createServerFn({ method: "POST" })
       where list_id = ${data.listId} and household_id = ${membership.id} and checked = true
     `;
 
+    await touchHousehold(sql, membership.id);
     return { cleared: bought.length };
   });
 
@@ -543,6 +553,7 @@ export const addUsualsToList = createServerFn({ method: "POST" })
       `;
       added += 1;
     }
+    if (added > 0) await touchHousehold(sql, membership.id);
     return { added };
   });
 

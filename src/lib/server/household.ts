@@ -9,6 +9,7 @@ import {
   getSqlClient,
   requireMembership,
   toIso,
+  touchHousehold,
 } from "./access";
 import { getOverviewData } from "./lists";
 
@@ -46,6 +47,26 @@ export const getOverview = createServerFn({ method: "GET" })
     const membership = await getMembership(sql, context.userId);
     if (!membership) return null;
     return getOverviewData(sql, context.userId, membership);
+  });
+
+export const getHouseholdPulse = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const sql = await getSqlClient();
+    const membership = await getMembership(sql, context.userId);
+    if (!membership) return { pulse: null as string | null, members: 0 };
+    const rows = await sql<{ pulse: string | Date | null; members: number | string }>`
+      select h.updated_at as pulse,
+             (select count(*)::int from household_members m where m.household_id = h.id) as members
+      from households h
+      where h.id = ${membership.id}
+      limit 1
+    `;
+    const row = rows[0];
+    return {
+      pulse: toIso(row?.pulse ?? null),
+      members: Number(row?.members ?? 0),
+    };
   });
 
 export const createHousehold = createServerFn({ method: "POST" })
@@ -133,6 +154,7 @@ export const joinHousehold = createServerFn({ method: "POST" })
       values (${household.id}, ${context.userId}, ${"member"})
     `;
 
+    await touchHousehold(sql, household.id);
     return mapHousehold({ ...household, role: "member" });
   });
 
@@ -145,7 +167,7 @@ export const renameHousehold = createServerFn({ method: "POST" })
     const sql = await getSqlClient();
     const membership = await requireMembership(sql, context.userId);
     await sql`
-      update households set name = ${data.name} where id = ${membership.id}
+      update households set name = ${data.name}, updated_at = now() where id = ${membership.id}
     `;
     return { ok: true as const };
   });

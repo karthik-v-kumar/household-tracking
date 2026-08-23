@@ -8,6 +8,7 @@ import {
   getSqlClient,
   requireMembership,
   toIso,
+  touchHousehold,
 } from "./access";
 
 export type UpkeepRow = {
@@ -136,6 +137,7 @@ export const addUpkeepItem = createServerFn({ method: "POST" })
       )
       returning id
     `;
+    await touchHousehold(sql, membership.id);
     return { id: Number(rows[0]!.id) };
   });
 
@@ -225,6 +227,7 @@ export const updateUpkeepItem = createServerFn({ method: "POST" })
         where id = ${data.itemId} and household_id = ${membership.id}
       `;
     }
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -248,6 +251,7 @@ export const markReplaced = createServerFn({ method: "POST" })
       set last_replaced_at = now(), spare_count = ${nextSpare}, updated_at = now()
       where id = ${data.itemId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const, spareCount: nextSpare };
   });
 
@@ -262,6 +266,7 @@ export const deleteUpkeepItem = createServerFn({ method: "POST" })
     await sql`
       delete from upkeep_items where id = ${data.itemId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -307,5 +312,6 @@ export const addNeededUpkeepToLists = createServerFn({ method: "POST" })
       `;
       added += 1;
     }
+    if (added > 0) await touchHousehold(sql, membership.id);
     return { added };
   });

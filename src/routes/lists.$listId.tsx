@@ -65,7 +65,6 @@ function ListBody({ listId }: { listId: number }) {
   const detail = useQuery({
     queryKey,
     queryFn: () => getListDetail({ data: { listId } }),
-    refetchInterval: 8_000,
   });
 
   const invalidate = async () => {

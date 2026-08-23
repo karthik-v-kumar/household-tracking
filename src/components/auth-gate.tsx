@@ -13,7 +13,6 @@ export function useOverviewQuery() {
     queryKey: ["overview"],
     queryFn: () => getOverview(),
     enabled: Boolean(user) && !isPending,
-    refetchInterval: 12_000,
   });
 }
 

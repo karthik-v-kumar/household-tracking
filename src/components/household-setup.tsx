@@ -39,37 +39,12 @@ export function HouseholdSetup() {
         Set up your household
       </h1>
       <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
-        Lists, usuals, and pantry levels are shared. Create a household, then send the invite code
-        to your other half.
+        One household, two phones. If someone already started, join their code —
+        don't create a second kitchen or the lists will never meet.
       </p>
 
       <form
         className="panel mt-8 p-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setCreateError(null);
-          create.mutate(createName.trim() || "Our kitchen");
-        }}
-      >
-        <h2 className="font-display text-2xl">Create one</h2>
-        <p className="mt-1 text-sm text-muted">You'll get a short code to share.</p>
-        <div className="mt-4 grid gap-1.5">
-          <Label htmlFor="household-name">Household name</Label>
-          <Input
-            id="household-name"
-            value={createName}
-            onChange={(e) => setCreateName(e.target.value)}
-            placeholder="Our kitchen"
-          />
-        </div>
-        {createError ? <p className="mt-2 text-sm text-danger">{createError}</p> : null}
-        <Button type="submit" className="mt-4 w-full" disabled={create.isPending}>
-          {create.isPending ? "Creating…" : "Create household"}
-        </Button>
-      </form>
-
-      <form
-        className="panel mt-4 p-5"
         onSubmit={(event) => {
           event.preventDefault();
           setJoinError(null);
@@ -77,7 +52,7 @@ export function HouseholdSetup() {
         }}
       >
         <h2 className="font-display text-2xl">Join one</h2>
-        <p className="mt-1 text-sm text-muted">Paste the code from someone already signed in.</p>
+        <p className="mt-1 text-sm text-muted">Paste the code from the phone that's already in.</p>
         <div className="mt-4 grid gap-1.5">
           <Label htmlFor="invite-code">Invite code</Label>
           <Input
@@ -92,11 +67,35 @@ export function HouseholdSetup() {
         {joinError ? <p className="mt-2 text-sm text-danger">{joinError}</p> : null}
         <Button
           type="submit"
-          variant="secondary"
           className="mt-4 w-full"
           disabled={join.isPending || code.trim().length < 4}
         >
           {join.isPending ? "Joining…" : "Join household"}
+        </Button>
+      </form>
+
+      <form
+        className="panel mt-4 p-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setCreateError(null);
+          create.mutate(createName.trim() || "Our kitchen");
+        }}
+      >
+        <h2 className="font-display text-2xl">Or start one</h2>
+        <p className="mt-1 text-sm text-muted">You'll get a short code to share.</p>
+        <div className="mt-4 grid gap-1.5">
+          <Label htmlFor="household-name">Household name</Label>
+          <Input
+            id="household-name"
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+            placeholder="Our kitchen"
+          />
+        </div>
+        {createError ? <p className="mt-2 text-sm text-danger">{createError}</p> : null}
+        <Button type="submit" variant="secondary" className="mt-4 w-full" disabled={create.isPending}>
+          {create.isPending ? "Creating…" : "Create household"}
         </Button>
       </form>
     </div>

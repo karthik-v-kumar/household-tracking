@@ -8,6 +8,7 @@ import {
   assertListInHousehold,
   getSqlClient,
   requireMembership,
+  touchHousehold,
 } from "./access";
 import { mapInventoryRow, type InventoryRow } from "./inventory-map";
 
@@ -102,6 +103,7 @@ export const addInventoryItem = createServerFn({ method: "POST" })
       )
       returning id
     `;
+    await touchHousehold(sql, membership.id);
     return { id: Number(rows[0]!.id) };
   });
 
@@ -201,6 +203,7 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
         where id = ${data.itemId} and household_id = ${membership.id}
       `;
     }
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -215,6 +218,7 @@ export const deleteInventoryItem = createServerFn({ method: "POST" })
     await sql`
       delete from inventory_items where id = ${data.itemId} and household_id = ${membership.id}
     `;
+    await touchHousehold(sql, membership.id);
     return { ok: true as const };
   });
 
@@ -254,5 +258,6 @@ export const addLowInventoryToLists = createServerFn({ method: "POST" })
       `;
       added += 1;
     }
+    if (added > 0) await touchHousehold(sql, membership.id);
     return { added };
   });
