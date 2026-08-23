@@ -236,16 +236,16 @@ function AddFilterDialog({
   const warehouse = lists.find((list) => list.name.toLowerCase() === "warehouse");
   const [name, setName] = useState("");
   const [intervalDays, setIntervalDays] = useState(90);
-  const [qtyNeeded, setQtyNeeded] = useState("1");
-  const [spareCount, setSpareCount] = useState("0");
+  const [qtyNeeded, setQtyNeeded] = useState(1);
+  const [spareCount, setSpareCount] = useState(0);
   const [listId, setListId] = useState<number | "">(warehouse?.id ?? lists[0]?.id ?? "");
 
   useEffect(() => {
     if (!open) return;
     setName("");
     setIntervalDays(90);
-    setQtyNeeded("1");
-    setSpareCount("0");
+    setQtyNeeded(1);
+    setSpareCount(0);
     setListId(warehouse?.id ?? lists[0]?.id ?? "");
   }, [open]);
 
@@ -265,8 +265,8 @@ function AddFilterDialog({
     onSuccess: async () => {
       toast.success("Tracking");
       setName("");
-      setQtyNeeded("1");
-      setSpareCount("0");
+      setQtyNeeded(1);
+      setSpareCount(0);
       await onCreated();
       onOpenChange(false);
     },
@@ -292,7 +292,7 @@ function AddFilterDialog({
                 onClick={() => {
                   setName(item.name);
                   setIntervalDays(item.intervalDays);
-                  setQtyNeeded(String(item.qtyNeeded));
+                  setQtyNeeded(item.qtyNeeded);
                 }}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
@@ -314,8 +314,8 @@ function AddFilterDialog({
             create.mutate({
               name: name.trim(),
               intervalDays,
-              qtyNeeded: Math.max(1, Number(qtyNeeded) || 1),
-              spareCount: Math.max(0, Number(spareCount) || 0),
+              qtyNeeded: Math.max(1, qtyNeeded),
+              spareCount: Math.max(0, spareCount),
               defaultListId: typeof listId === "number" ? listId : undefined,
             });
           }}
@@ -327,59 +327,80 @@ function AddFilterDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Furnace air filter"
+              autoComplete="off"
+              enterKeyHint="done"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="filter-interval">Replace</Label>
-              <select
-                id="filter-interval"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm"
-                value={intervalDays}
-                onChange={(e) => setIntervalDays(Number(e.target.value))}
-              >
-                {REPLACE_INTERVALS.map((row) => (
-                  <option key={row.days} value={row.days}>
+          <div className="grid gap-1.5">
+            <p className="text-sm font-medium">Replace</p>
+            <div className="flex flex-wrap gap-1.5">
+              {REPLACE_INTERVALS.map((row) => {
+                const selected = intervalDays === row.days;
+                return (
+                  <button
+                    key={row.days}
+                    type="button"
+                    onClick={() => setIntervalDays(row.days)}
+                    className={cn(
+                      "rounded-full border px-3 py-2 text-sm",
+                      selected
+                        ? "border-fg bg-primary text-primary-fg"
+                        : "border-border bg-bg-elevated text-fg",
+                    )}
+                  >
                     {row.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="filter-qty">Each change</Label>
-              <Input
-                id="filter-qty"
-                inputMode="numeric"
-                value={qtyNeeded}
-                onChange={(e) => setQtyNeeded(e.target.value)}
-              />
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="filter-spare">On the shelf now</Label>
-              <Input
-                id="filter-spare"
-                inputMode="numeric"
-                value={spareCount}
-                onChange={(e) => setSpareCount(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="filter-list">Buy at</Label>
-              <select
-                id="filter-list"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm"
-                value={listId}
-                onChange={(e) => setListId(e.target.value ? Number(e.target.value) : "")}
+            <Stepper
+              label="Each change"
+              value={qtyNeeded}
+              min={1}
+              onChange={setQtyNeeded}
+            />
+            <Stepper
+              label="On the shelf now"
+              value={spareCount}
+              min={0}
+              onChange={setSpareCount}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <p className="text-sm font-medium">Buy at</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setListId("")}
+                className={cn(
+                  "rounded-full border px-3 py-2 text-sm",
+                  listId === ""
+                    ? "border-fg bg-primary text-primary-fg"
+                    : "border-border bg-bg-elevated text-fg",
+                )}
               >
-                <option value="">Any list</option>
-                {lists.map((list) => (
-                  <option key={list.id} value={list.id}>
+                Any list
+              </button>
+              {lists.map((list) => {
+                const selected = listId === list.id;
+                return (
+                  <button
+                    key={list.id}
+                    type="button"
+                    onClick={() => setListId(list.id)}
+                    className={cn(
+                      "rounded-full border px-3 py-2 text-sm",
+                      selected
+                        ? "border-fg bg-primary text-primary-fg"
+                        : "border-border bg-bg-elevated text-fg",
+                    )}
+                  >
                     {list.name}
-                  </option>
-                ))}
-              </select>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <Button type="submit" disabled={create.isPending || !name.trim()}>
@@ -388,6 +409,46 @@ function AddFilterDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Stepper({
+  label,
+  value,
+  onChange,
+  min = 0,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <p className="text-sm font-medium">{label}</p>
+      <div className="flex h-11 items-center justify-between rounded-md border border-border bg-bg px-1">
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={`Decrease ${label}`}
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+        >
+          <Minus className="size-3.5" />
+        </Button>
+        <span className="min-w-6 text-center text-sm font-medium tabular-nums">{value}</span>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={`Increase ${label}`}
+          onClick={() => onChange(value + 1)}
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </div>
+    </div>
   );
 }
 

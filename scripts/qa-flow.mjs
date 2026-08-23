@@ -90,6 +90,8 @@ try {
   if (filterName !== "Tesla Model Y cabin filter") {
     throw new Error(`expected Tesla preset, got ${filterName}`);
   }
+  await page.getByRole("button", { name: "Every year" }).waitFor({ timeout: 5000 });
+  await page.getByRole("button", { name: "Warehouse" }).waitFor({ timeout: 5000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-filter-dialog.png" });
   await page.locator("form").getByRole("button", { name: "Add filter" }).click();
   await page.getByText("Tesla Model Y cabin filter").first().waitFor({ timeout: 10000 });

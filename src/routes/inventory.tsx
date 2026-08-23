@@ -333,33 +333,66 @@ function AddInventoryDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Toilet paper"
+              autoComplete="off"
+              enterKeyHint="done"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="typical">Typical days</Label>
-              <Input
-                id="typical"
-                inputMode="numeric"
-                value={typicalDays}
-                onChange={(e) => setTypicalDays(e.target.value)}
-              />
+          <div className="grid gap-1.5">
+            <p className="text-sm font-medium">Usually lasts</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[30, 45, 60, 90].map((days) => {
+                const selected = Number(typicalDays) === days;
+                return (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setTypicalDays(String(days))}
+                    className={cn(
+                      "rounded-full border px-3 py-2 text-sm",
+                      selected
+                        ? "border-fg bg-primary text-primary-fg"
+                        : "border-border bg-bg-elevated text-fg",
+                    )}
+                  >
+                    {days} days
+                  </button>
+                );
+              })}
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="restock-list">Restock at</Label>
-              <select
-                id="restock-list"
-                className="h-11 rounded-md border border-border bg-surface px-3 text-sm"
-                value={listId}
-                onChange={(e) => setListId(e.target.value ? Number(e.target.value) : "")}
+          </div>
+          <div className="grid gap-1.5">
+            <p className="text-sm font-medium">Restock at</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setListId("")}
+                className={cn(
+                  "rounded-full border px-3 py-2 text-sm",
+                  listId === ""
+                    ? "border-fg bg-primary text-primary-fg"
+                    : "border-border bg-bg-elevated text-fg",
+                )}
               >
-                <option value="">Any list</option>
-                {lists.map((list) => (
-                  <option key={list.id} value={list.id}>
+                Any list
+              </button>
+              {lists.map((list) => {
+                const selected = listId === list.id;
+                return (
+                  <button
+                    key={list.id}
+                    type="button"
+                    onClick={() => setListId(list.id)}
+                    className={cn(
+                      "rounded-full border px-3 py-2 text-sm",
+                      selected
+                        ? "border-fg bg-primary text-primary-fg"
+                        : "border-border bg-bg-elevated text-fg",
+                    )}
+                  >
                     {list.name}
-                  </option>
-                ))}
-              </select>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <Button type="submit" disabled={create.isPending || !name.trim()}>

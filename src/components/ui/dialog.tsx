@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef, ElementRef, HTMLAttributes } from "react";
-import { forwardRef } from "react";
+import { forwardRef, useEffect } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,30 @@ export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 export const DialogPortal = DialogPrimitive.Portal;
+
+function useVisualViewportVars() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const vv = window.visualViewport;
+    const apply = () => {
+      const height = vv?.height ?? window.innerHeight;
+      const top = vv?.offsetTop ?? 0;
+      const bottom = Math.max(0, window.innerHeight - top - height);
+      root.style.setProperty("--vv-top", `${Math.round(top)}px`);
+      root.style.setProperty("--vv-height", `${Math.round(height)}px`);
+      root.style.setProperty("--vv-bottom", `${Math.round(bottom)}px`);
+    };
+    apply();
+    vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
+}
 
 export const DialogOverlay = forwardRef<
   ElementRef<typeof DialogPrimitive.Overlay>,
@@ -27,29 +51,32 @@ DialogOverlay.displayName = "DialogOverlay";
 export const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "overlay-surface fixed top-1/2 left-1/2 z-[80] flex max-h-[min(90dvh,40rem)] w-[min(100%-1.5rem,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto p-6 text-fg focus:outline-none",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute top-3 right-3 grid size-9 place-items-center rounded-full text-muted hover:bg-fg/6 hover:text-fg">
-        <X className="size-4" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, children, ...props }, ref) => {
+  useVisualViewportVars();
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "overlay-surface dialog-sheet z-[80] flex flex-col overflow-hidden text-fg focus:outline-none",
+          className,
+        )}
+        {...props}
+      >
+        <div className="dialog-sheet-body">{children}</div>
+        <DialogPrimitive.Close className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-muted hover:bg-fg/6 hover:text-fg">
+          <X className="size-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = "DialogContent";
 
 export function DialogHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mb-4 pr-8", className)} {...props} />;
+  return <div className={cn("mb-4 pr-10", className)} {...props} />;
 }
 
 export function DialogTitle({
