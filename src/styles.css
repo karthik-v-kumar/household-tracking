@@ -35,8 +35,12 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     background: var(--color-bg);
     color: var(--color-fg);
+    overflow-x: hidden;
+    overflow-y: auto;
     --vv-top: 0px;
     --vv-height: 100dvh;
     --vv-bottom: 0px;
@@ -44,14 +48,39 @@
 
   body {
     min-height: 100dvh;
+    min-height: 100svh;
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
 
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary,
+  label {
+    touch-action: manipulation;
+  }
+
+  button,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: color-mix(in oklab, var(--color-fg) 10%, transparent);
   }
 
   h1,
@@ -143,7 +172,6 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
     padding-bottom: 0.125rem;
   }
 
@@ -171,7 +199,6 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
     padding: 1.5rem;
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
   }

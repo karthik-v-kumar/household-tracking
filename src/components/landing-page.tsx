@@ -37,15 +37,15 @@ const BEATS = [
 
 export function LandingPage() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col bg-bg">
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/80 bg-bg px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
+    <div className="mx-auto w-full max-w-xl bg-bg">
+      <header className="flex items-center justify-between gap-3 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
         <p className="wordmark">{APP_NAME}</p>
         <Link to="/login" className={buttonVariants({ size: "sm" })}>
           Log in or sign up
         </Link>
       </header>
 
-      <main className="px-5 pb-16">
+      <main className="px-5 pb-[max(4.5rem,calc(2rem+env(safe-area-inset-bottom)))]">
         <h1 className="mt-8 font-display text-[2.65rem] leading-[1.05] tracking-tight sm:text-5xl">
           What to buy.
           <br />

@@ -48,7 +48,7 @@ export function ListCard({
       <div className="pr-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`${list.name} list actions`}>
+            <Button variant="ghost" size="icon" aria-label={`${list.name} list actions`}>
               <MoreHorizontal className="size-4" />
             </Button>
           </DropdownMenuTrigger>

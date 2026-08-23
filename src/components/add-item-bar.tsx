@@ -102,7 +102,7 @@ export function AddItemBar({
             <li key={item.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-fg/5"
+                className="flex min-h-11 w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-fg/5"
                 onClick={() => submit(item)}
               >
                 <span>{item.name}</span>

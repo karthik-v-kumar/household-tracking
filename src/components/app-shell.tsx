@@ -34,7 +34,7 @@ export function AppShell({
   const user = useCurrentUser();
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-xl flex-col bg-bg">
+    <div className="mx-auto flex h-dvh w-full max-w-xl flex-col overflow-hidden bg-bg overscroll-y-none">
       <a
         href="#main-content"
         className="sr-only rounded-md bg-surface px-4 py-2 text-fg focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
@@ -61,7 +61,7 @@ export function AppShell({
         {back ? <div className="mt-3">{back}</div> : null}
       </header>
 
-      <main id="main-content" className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+      <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-6">
         {eyebrow ? (
           <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">
             {eyebrow}

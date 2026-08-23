@@ -25,6 +25,15 @@ try {
   if (await page.getByRole("textbox", { name: "Email" }).count()) {
     throw new Error("login form should not be on the landing page");
   }
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(250);
+  const atBottom = await page.evaluate(() => window.scrollY > 100);
+  if (!atBottom) throw new Error("landing should scroll down");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  const atTop = await page.evaluate(() => window.scrollY < 8);
+  if (!atTop) throw new Error("landing should scroll back to the top");
+  await page.getByRole("heading", { name: /What to buy/ }).waitFor({ timeout: 3000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-landing.png" });
   await page.getByRole("link", { name: "Log in or sign up" }).first().click();
   await page.getByRole("heading", { name: /lists you both keep/i }).waitFor({ timeout: 8000 });

@@ -29,6 +29,9 @@ function useVisualViewportVars() {
       vv?.removeEventListener("resize", apply);
       vv?.removeEventListener("scroll", apply);
       window.removeEventListener("orientationchange", apply);
+      root.style.removeProperty("--vv-top");
+      root.style.removeProperty("--vv-height");
+      root.style.removeProperty("--vv-bottom");
     };
   }, []);
 }

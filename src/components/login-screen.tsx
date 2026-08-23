@@ -51,14 +51,14 @@ export function LoginScreen({ initialMode = "signin" }: { initialMode?: "signin"
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col bg-bg">
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col overflow-x-hidden bg-bg">
       <header className="flex items-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
         <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
           {APP_NAME}
         </Link>
       </header>
 
-      <main className="flex flex-1 flex-col justify-center px-5 pb-12 pt-4">
+      <main className="flex flex-1 flex-col justify-center overflow-y-auto px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-4">
         <div className="relative mx-auto w-full max-w-md">
           <figure className="still-life">
             <img

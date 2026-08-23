@@ -22,6 +22,8 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       { name: "description", content: "What to buy, and what's at home. Shared lists, pantry, and filters for a two-person household." },
       { name: "theme-color", content: "#F3EEE4" },
+      { name: "apple-mobile-web-app-title", content: APP_NAME },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
