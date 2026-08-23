@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Package, Plus } from "lucide-react";
@@ -255,6 +255,13 @@ function AddInventoryDialog({
   const [typicalDays, setTypicalDays] = useState("45");
   const [listId, setListId] = useState<number | "">(lists[0]?.id ?? "");
 
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setTypicalDays("45");
+    setListId(lists[0]?.id ?? "");
+  }, [open]);
+
   const have = useMemo(
     () => new Set(existingNames.map((n) => n.toLowerCase())),
     [existingNames],
@@ -285,24 +292,27 @@ function AddInventoryDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="mb-4 flex flex-wrap gap-2">
-          {QUICK_INVENTORY.filter((item) => !have.has(item.name.toLowerCase())).map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() =>
-                create.mutate({
-                  name: item.name,
-                  typicalDays: item.typicalDays,
-                  defaultListId: typeof listId === "number" ? listId : undefined,
-                })
-              }
-              className={cn(
-                "rounded-full border border-border bg-bg-elevated px-3 py-1.5 text-sm text-fg",
-              )}
-            >
-              {item.name}
-            </button>
-          ))}
+          {QUICK_INVENTORY.filter((item) => !have.has(item.name.toLowerCase())).map((item) => {
+            const selected = name.trim().toLowerCase() === item.name.toLowerCase();
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => {
+                  setName(item.name);
+                  setTypicalDays(String(item.typicalDays));
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
+                  selected
+                    ? "border-fg bg-primary text-primary-fg"
+                    : "border-border bg-bg-elevated text-fg",
+                )}
+              >
+                {item.name}
+              </button>
+            );
+          })}
         </div>
         <form
           className="grid gap-3"

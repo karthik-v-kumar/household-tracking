@@ -43,6 +43,8 @@ try {
   await page.getByRole("link", { name: "Back to lists" }).click();
   await page.getByRole("heading", { name: "This weekend" }).waitFor({ timeout: 10000 });
   await page.getByRole("button", { name: "Pharmacy list actions" }).click();
+  await page.getByRole("menuitem", { name: "Edit list" }).waitFor({ timeout: 5000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-menu.png" });
   await page.getByRole("menuitem", { name: "Delete list" }).click();
   await page.getByRole("button", { name: "Delete list" }).click();
   await page.getByRole("link", { name: /Pharmacy/ }).waitFor({ state: "hidden", timeout: 10000 });
@@ -74,8 +76,24 @@ try {
   await page.getByRole("heading", { name: "Pantry" }).waitFor({ timeout: 10000 });
   await page.getByRole("button", { name: "Add inventory item" }).click();
   await page.getByRole("button", { name: "Toilet paper" }).click();
+  await page.getByRole("button", { name: "Add to inventory" }).click();
   await page.getByText("Toilet paper").first().waitFor({ timeout: 10000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-inventory.png" });
+
+  await page.getByRole("button", { name: "Filters" }).click();
+  await page.getByRole("heading", { name: "Filters", exact: true }).waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "Add filter" }).first().click();
+  await page.getByRole("button", { name: "Tesla Model Y cabin filter" }).click();
+  await page.getByRole("heading", { name: "Track a filter" }).waitFor({ timeout: 5000 });
+  await page.locator("#filter-name").waitFor({ timeout: 5000 });
+  const filterName = await page.locator("#filter-name").inputValue();
+  if (filterName !== "Tesla Model Y cabin filter") {
+    throw new Error(`expected Tesla preset, got ${filterName}`);
+  }
+  await page.screenshot({ path: "/workspace/screenshots/qa-filter-dialog.png" });
+  await page.locator("form").getByRole("button", { name: "Add filter" }).click();
+  await page.getByText("Tesla Model Y cabin filter").first().waitFor({ timeout: 10000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-filters.png" });
 
   await page.getByRole("link", { name: "Household" }).click();
   await page.getByRole("heading", { name: "Invite" }).waitFor({ timeout: 10000 });

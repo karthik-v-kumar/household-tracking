@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Filter, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -240,6 +240,15 @@ function AddFilterDialog({
   const [spareCount, setSpareCount] = useState("0");
   const [listId, setListId] = useState<number | "">(warehouse?.id ?? lists[0]?.id ?? "");
 
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setIntervalDays(90);
+    setQtyNeeded("1");
+    setSpareCount("0");
+    setListId(warehouse?.id ?? lists[0]?.id ?? "");
+  }, [open]);
+
   const have = useMemo(
     () => new Set(existingNames.map((n) => n.toLowerCase())),
     [existingNames],
@@ -274,24 +283,28 @@ function AddFilterDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="mb-4 flex flex-wrap gap-2">
-          {QUICK_FILTERS.filter((item) => !have.has(item.name.toLowerCase())).map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() =>
-                create.mutate({
-                  name: item.name,
-                  intervalDays: item.intervalDays,
-                  qtyNeeded: item.qtyNeeded,
-                  spareCount: 0,
-                  defaultListId: typeof listId === "number" ? listId : undefined,
-                })
-              }
-              className="rounded-full border border-border bg-bg-elevated px-3 py-1.5 text-sm text-fg"
-            >
-              {item.name}
-            </button>
-          ))}
+          {QUICK_FILTERS.filter((item) => !have.has(item.name.toLowerCase())).map((item) => {
+            const selected = name.trim().toLowerCase() === item.name.toLowerCase();
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => {
+                  setName(item.name);
+                  setIntervalDays(item.intervalDays);
+                  setQtyNeeded(String(item.qtyNeeded));
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm transition-colors duration-200",
+                  selected
+                    ? "border-fg bg-primary text-primary-fg"
+                    : "border-border bg-bg-elevated text-fg",
+                )}
+              >
+                {item.name}
+              </button>
+            );
+          })}
         </div>
         <form
           className="grid gap-3"

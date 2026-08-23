@@ -16,7 +16,7 @@ export const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-fg/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[70] bg-fg/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -33,7 +33,7 @@ export const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "panel fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,28rem)] -translate-x-1/2 -translate-y-1/2 p-6 focus:outline-none",
+        "overlay-surface fixed top-1/2 left-1/2 z-[80] flex max-h-[min(90dvh,40rem)] w-[min(100%-1.5rem,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto p-6 text-fg focus:outline-none",
         className,
       )}
       {...props}

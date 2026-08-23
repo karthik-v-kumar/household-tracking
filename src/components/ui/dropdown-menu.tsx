@@ -15,7 +15,10 @@ export const DropdownMenuContent = forwardRef<
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      className={cn("panel z-50 min-w-44 overflow-hidden p-1", className)}
+      className={cn(
+        "overlay-surface z-[90] min-w-44 overflow-hidden p-1 text-fg",
+        className,
+      )}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>

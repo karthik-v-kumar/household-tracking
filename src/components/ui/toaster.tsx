@@ -7,7 +7,7 @@ export function Toaster() {
       position="top-center"
       toastOptions={{
         classNames: {
-          toast: "panel bg-surface text-fg border-border",
+          toast: "overlay-surface bg-surface text-fg border-border",
         },
       }}
     />
