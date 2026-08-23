@@ -6,7 +6,7 @@ const CATALOG = [
   {
     src: "/images/paper.jpg",
     alt: "Unbranded paper towels and toilet paper on a cream surface",
-    caption: "The house",
+    caption: "Paper goods",
   },
   {
     src: "/images/filter.jpg",
@@ -22,16 +22,16 @@ const CATALOG = [
 
 const BEATS = [
   {
-    title: "Lists by store",
-    body: "Grocery, warehouse, pharmacy — or Costco, Target, the farmers market. Add and delete freely.",
+    title: "A list for each store",
+    body: "Grocery. The warehouse. The pharmacy. Add Costco or the farmers market; drop the ones you never use.",
   },
   {
-    title: "This week's usuals",
-    body: "Star what you buy often. Tap only what you need; leave the rest on the tray.",
+    title: "Usuals, not the whole catalog",
+    body: "Milk and eggs live in a tray on that list. Tap what you need this week. Leave the rest.",
   },
   {
-    title: "The house keeps score",
-    body: "Pantry levels and filter schedules. Empty shelves write themselves onto a list.",
+    title: "The shelf keeps its own count",
+    body: "Paper on low. A furnace filter due in twelve days. If you have no spare, it's already on a list.",
   },
 ];
 
@@ -47,9 +47,9 @@ export function LandingPage() {
 
       <main className="px-5 pb-16">
         <h1 className="mt-8 font-display text-[2.65rem] leading-[1.05] tracking-tight sm:text-5xl">
-          Weekend lists.
+          What to buy.
           <br />
-          A pantry that remembers.
+          What's at home.
         </h1>
 
         <figure className="still-life mt-7">
@@ -63,8 +63,8 @@ export function LandingPage() {
         </figure>
 
         <p className="mt-5 max-w-md text-base leading-relaxed text-muted">
-          Two phones, one household. Shop by store, tap in this week's usuals, and let
-          empty shelves write themselves onto a list.
+          Two phones, one kitchen. A list for each store you shop — and a record of
+          the paper, the filters, and whatever else lives on the shelf.
         </p>
 
         <ul className="mt-6 grid grid-cols-3 gap-2.5">
@@ -97,12 +97,16 @@ export function LandingPage() {
           ))}
         </ul>
 
-        <div className="mt-10 flex flex-col items-start gap-3">
+        <p className="mt-10 max-w-md text-base leading-relaxed">
+          You shouldn't have to type milk in again every Saturday.
+        </p>
+
+        <div className="mt-6 flex flex-col items-start gap-3">
           <Link to="/login" className={buttonVariants()}>
             Log in or sign up
           </Link>
           <p className="text-xs leading-relaxed text-subtle">
-            One household, two phones. Stay signed in after the first login.
+            Both of you stay signed in. The lists stay in sync.
           </p>
         </div>
       </main>

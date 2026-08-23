@@ -19,7 +19,7 @@ const password = "stocked-qa-pass";
 
 try {
   await page.goto(base, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.getByRole("heading", { name: /Weekend lists/ }).waitFor({ timeout: 15000 });
+  await page.getByRole("heading", { name: /What to buy/ }).waitFor({ timeout: 15000 });
   const hero = page.locator('img[alt*="Swiss chard"]');
   await hero.waitFor({ timeout: 5000 });
   if (await page.getByRole("textbox", { name: "Email" }).count()) {

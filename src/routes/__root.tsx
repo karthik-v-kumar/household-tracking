@@ -20,7 +20,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" },
       { title: APP_NAME },
-      { name: "description", content: "Shared household grocery lists and pantry inventory." },
+      { name: "description", content: "What to buy, and what's at home. Shared lists, pantry, and filters for a two-person household." },
       { name: "theme-color", content: "#F3EEE4" },
     ],
     links: [

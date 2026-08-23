@@ -1,5 +1,5 @@
 export const APP_NAME = "Stocked";
-export const APP_TAGLINE = "Weekend lists. A pantry that remembers.";
+export const APP_TAGLINE = "What to buy. What's at home.";
 
 export const LIST_COLORS = [
   { id: "sage", label: "Sage" },
