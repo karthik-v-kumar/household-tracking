@@ -42,7 +42,7 @@ export function AppShell({
         Skip to content
       </a>
 
-      <header className="shrink-0 border-b border-border/80 bg-bg px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
+      <header className="edge-top shrink-0 border-b border-border/80 bg-bg px-5 pb-3">
         <div className="flex items-center justify-between gap-3">
           <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
             {APP_NAME}

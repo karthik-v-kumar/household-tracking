@@ -52,7 +52,7 @@ export function LoginScreen({ initialMode = "signin" }: { initialMode?: "signin"
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col overflow-x-hidden bg-bg">
-      <header className="flex items-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
+      <header className="edge-top flex items-center px-5 pb-3">
         <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
           {APP_NAME}
         </Link>

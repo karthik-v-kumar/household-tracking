@@ -156,6 +156,12 @@
     display: block;
   }
 
+  /* Clears Dynamic Island + in-app preview chrome so the header can sit in view
+     and the page can scroll that far. env() is often 0 inside the preview webview. */
+  .edge-top {
+    padding-top: max(8.75rem, calc(env(safe-area-inset-top) + 1.25rem));
+  }
+
   .overlay-surface {
     background-color: var(--color-surface);
     color: var(--color-fg);

@@ -38,7 +38,7 @@ const BEATS = [
 export function LandingPage() {
   return (
     <div className="mx-auto w-full max-w-xl bg-bg">
-      <header className="flex items-center justify-between gap-3 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
+      <header className="edge-top flex items-center justify-between gap-3 px-5 pb-3">
         <p className="wordmark">{APP_NAME}</p>
         <Link to="/login" className={buttonVariants({ size: "sm" })}>
           Log in or sign up
