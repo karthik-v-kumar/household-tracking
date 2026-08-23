@@ -22,7 +22,13 @@ try {
   await page.getByRole("heading", { name: /Weekend lists/ }).waitFor({ timeout: 15000 });
   const hero = page.locator('img[alt*="Swiss chard"]');
   await hero.waitFor({ timeout: 5000 });
+  if (await page.getByRole("textbox", { name: "Email" }).count()) {
+    throw new Error("login form should not be on the landing page");
+  }
   await page.screenshot({ path: "/workspace/screenshots/qa-landing.png" });
+  await page.getByRole("link", { name: "Log in or sign up" }).first().click();
+  await page.getByRole("heading", { name: /lists you both keep/i }).waitFor({ timeout: 8000 });
+  await page.screenshot({ path: "/workspace/screenshots/qa-login.png" });
   await page.getByRole("button", { name: "New here? Create an account" }).click();
   await page.locator("#name").fill("QA Tester");
   await page.locator("#email").fill(email);

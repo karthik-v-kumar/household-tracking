@@ -8,7 +8,8 @@ import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ListCard, NewListCard } from "@/components/list-card";
-import { LoginPending, LoginScreen } from "@/components/login-screen";
+import { LoginPending } from "@/components/login-screen";
+import { LandingPage } from "@/components/landing-page";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   const { user, isPending } = useCurrentUserState();
   if (isPending) return <LoginPending />;
-  if (!user) return <LoginScreen />;
+  if (!user) return <LandingPage />;
   return (
     <AuthGate>
       {(overview) => <HomeContent overview={overview} />}
