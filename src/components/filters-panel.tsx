@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QUICK_FILTERS, REPLACE_INTERVALS } from "@/lib/constants";
+import { QUICK_FILTERS, REPLACE_INTERVALS, STOCK_LEAD_PRESETS } from "@/lib/constants";
 import { fromDateInput, formatShortDate, toDateInput } from "@/lib/dates";
+import { DEFAULT_STOCK_LEAD_DAYS } from "@/lib/upkeep-logic";
 import { formatUpkeepDue } from "@/lib/upkeep-logic";
 import {
   addNeededUpkeepToLists,
@@ -194,6 +195,11 @@ function FilterCard({
           </p>
           <p className="mt-0.5 text-xs text-muted">{formatUpkeepDue(item.daysUntil)}</p>
           {lastChanged ? <p className="mt-0.5 text-xs text-subtle">Last changed {lastChanged}</p> : null}
+          {!item.needToBuy && item.spareCount < item.qtyNeeded && item.stockFromAt ? (
+            <p className="mt-0.5 text-xs text-subtle">
+              Stock from {formatShortDate(item.stockFromAt)}
+            </p>
+          ) : null}
         </button>
         <Badge tone={tone}>{badge}</Badge>
       </div>
@@ -233,7 +239,7 @@ function FilterCard({
           disabled={item.onAList || !item.needToBuy}
           onClick={onAdd}
         >
-          {item.onAList ? "On a list" : item.needToBuy ? "Add to list" : "Stocked"}
+          {item.onAList ? "On a list" : item.needToBuy ? "Add to list" : item.spareCount >= item.qtyNeeded ? "Stocked" : "Not yet"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onEdit}>
           Edit
@@ -266,6 +272,7 @@ function FilterDialog({
   const [intervalDays, setIntervalDays] = useState(90);
   const [qtyNeeded, setQtyNeeded] = useState(1);
   const [spareCount, setSpareCount] = useState(0);
+  const [stockLeadDays, setStockLeadDays] = useState(DEFAULT_STOCK_LEAD_DAYS);
   const [listId, setListId] = useState<number | "">("");
   const [lastChanged, setLastChanged] = useState("");
 
@@ -275,6 +282,7 @@ function FilterDialog({
     setIntervalDays(item?.intervalDays ?? 90);
     setQtyNeeded(item?.qtyNeeded ?? 1);
     setSpareCount(item?.spareCount ?? 0);
+    setStockLeadDays(item?.stockLeadDays ?? DEFAULT_STOCK_LEAD_DAYS);
     setListId(item?.defaultListId ?? warehouse?.id ?? lists[0]?.id ?? "");
     setLastChanged(
       toDateInput(item?.lastReplacedAt) || toDateInput(new Date().toISOString()),
@@ -293,6 +301,7 @@ function FilterDialog({
         intervalDays,
         qtyNeeded: Math.max(1, qtyNeeded),
         spareCount: Math.max(0, spareCount),
+        stockLeadDays,
         lastReplacedAt: lastChanged ? fromDateInput(lastChanged) : null,
         defaultListId: typeof listId === "number" ? listId : null,
       };
@@ -408,6 +417,32 @@ function FilterDialog({
           <div className="grid grid-cols-2 gap-3">
             <Stepper label="Each change" value={qtyNeeded} min={1} onChange={setQtyNeeded} />
             <Stepper label="On the shelf now" value={spareCount} min={0} onChange={setSpareCount} />
+          </div>
+          <div className="grid gap-1.5">
+            <p className="text-sm font-medium">Remind me to stock</p>
+            <p className="text-xs text-muted">
+              Cabin filters and the like don't need a spare two years early.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {STOCK_LEAD_PRESETS.map((row) => {
+                const selected = stockLeadDays === row.days;
+                return (
+                  <button
+                    key={row.days}
+                    type="button"
+                    onClick={() => setStockLeadDays(row.days)}
+                    className={cn(
+                      "min-h-11 rounded-full border px-3 py-2 text-sm",
+                      selected
+                        ? "border-fg bg-primary text-primary-fg"
+                        : "border-border bg-bg-elevated text-fg",
+                    )}
+                  >
+                    {row.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <ListPicker label="Buy at" lists={lists} value={listId} onChange={setListId} />
           <Button type="submit" disabled={save.isPending || !name.trim()}>

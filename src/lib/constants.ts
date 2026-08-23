@@ -74,6 +74,14 @@ export const REPLACE_INTERVALS = [
   { days: 90, label: "Every 3 months" },
   { days: 180, label: "Every 6 months" },
   { days: 365, label: "Every year" },
+  { days: 730, label: "Every 2 years" },
+] as const;
+
+export const STOCK_LEAD_PRESETS = [
+  { days: 0, label: "Keep a spare" },
+  { days: 14, label: "2 weeks before" },
+  { days: 30, label: "1 month before" },
+  { days: 60, label: "2 months before" },
 ] as const;
 
 export const QUICK_FILTERS = [
@@ -82,5 +90,5 @@ export const QUICK_FILTERS = [
   { name: "Fridge water filter", intervalDays: 180, qtyNeeded: 1 },
   { name: "Vacuum filter", intervalDays: 180, qtyNeeded: 1 },
   { name: "Air fryer filter", intervalDays: 90, qtyNeeded: 1 },
-  { name: "Tesla Model Y cabin filter", intervalDays: 365, qtyNeeded: 2 },
+  { name: "Tesla Model Y cabin filter", intervalDays: 730, qtyNeeded: 2 },
 ] as const;

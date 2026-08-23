@@ -74,6 +74,7 @@ export type UpkeepItem = {
   lastReplacedAt: string | null;
   spareCount: number;
   qtyNeeded: number;
+  stockLeadDays: number;
   defaultListId: number | null;
   defaultListName: string | null;
   notes: string | null;
@@ -83,6 +84,7 @@ export type UpkeepItem = {
   daysSince: number | null;
   needToBuy: boolean;
   buyQty: number;
+  stockFromAt: string | null;
 };
 
 export type Overview = {

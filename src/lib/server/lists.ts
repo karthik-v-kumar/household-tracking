@@ -127,7 +127,7 @@ export async function getOverviewData(
   try {
     upkeepRows = await sql<UpkeepRow>`
       select u.id, u.name, u.interval_days, u.last_replaced_at, u.spare_count,
-             u.qty_needed, u.default_list_id, u.notes,
+             u.qty_needed, u.stock_lead_days, u.default_list_id, u.notes,
              l.name as default_list_name
       from upkeep_items u
       left join lists l on l.id = u.default_list_id

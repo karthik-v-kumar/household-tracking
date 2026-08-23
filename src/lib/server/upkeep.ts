@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
-import { describeUpkeep, upkeepRank } from "@/lib/upkeep-logic";
+import { describeUpkeep, upkeepRank, DEFAULT_STOCK_LEAD_DAYS } from "@/lib/upkeep-logic";
 import type { UpkeepItem } from "@/lib/types";
 import {
   assertListInHousehold,
@@ -17,6 +17,7 @@ export type UpkeepRow = {
   last_replaced_at: string | Date | null;
   spare_count: number | string;
   qty_needed: number | string;
+  stock_lead_days: number | string | null;
   default_list_id: number | null;
   default_list_name: string | null;
   notes: string | null;
@@ -26,12 +27,17 @@ export function mapUpkeepRow(row: UpkeepRow, onAList: boolean): UpkeepItem {
   const intervalDays = Number(row.interval_days);
   const spareCount = Number(row.spare_count);
   const qtyNeeded = Math.max(1, Number(row.qty_needed) || 1);
+  const stockLeadDays =
+    row.stock_lead_days == null
+      ? DEFAULT_STOCK_LEAD_DAYS
+      : Number(row.stock_lead_days);
   const lastReplacedAt = toIso(row.last_replaced_at);
   const described = describeUpkeep({
     intervalDays,
     lastReplacedAt,
     spareCount,
     qtyNeeded,
+    stockLeadDays,
   });
   return {
     id: Number(row.id),
@@ -40,6 +46,7 @@ export function mapUpkeepRow(row: UpkeepRow, onAList: boolean): UpkeepItem {
     lastReplacedAt,
     spareCount,
     qtyNeeded,
+    stockLeadDays: Number.isFinite(stockLeadDays) ? stockLeadDays : DEFAULT_STOCK_LEAD_DAYS,
     defaultListId: row.default_list_id == null ? null : Number(row.default_list_id),
     defaultListName: row.default_list_name,
     notes: row.notes,
@@ -54,7 +61,7 @@ export async function loadUpkeep(userId: string): Promise<UpkeepItem[]> {
   const [rows, onListRows] = await Promise.all([
     sql<UpkeepRow>`
       select u.id, u.name, u.interval_days, u.last_replaced_at, u.spare_count,
-             u.qty_needed, u.default_list_id, u.notes,
+             u.qty_needed, u.stock_lead_days, u.default_list_id, u.notes,
              l.name as default_list_name
       from upkeep_items u
       left join lists l on l.id = u.default_list_id
@@ -90,6 +97,7 @@ export const addUpkeepItem = createServerFn({ method: "POST" })
         qtyNeeded: z.number().int().min(1).max(12).optional(),
         spareCount: z.number().int().min(0).max(24).optional(),
         lastReplacedAt: z.string().trim().optional().nullable(),
+        stockLeadDays: z.number().int().min(0).max(1095).optional(),
         defaultListId: z.number().int().positive().optional().nullable(),
       })
       .parse(input),
@@ -115,7 +123,7 @@ export const addUpkeepItem = createServerFn({ method: "POST" })
 
     const rows = await sql<{ id: number }>`
       insert into upkeep_items (
-        household_id, name, interval_days, last_replaced_at, spare_count, qty_needed, default_list_id
+        household_id, name, interval_days, last_replaced_at, spare_count, qty_needed, stock_lead_days, default_list_id
       ) values (
         ${membership.id},
         ${data.name},
@@ -123,6 +131,7 @@ export const addUpkeepItem = createServerFn({ method: "POST" })
         ${last},
         ${data.spareCount ?? 0},
         ${data.qtyNeeded ?? 1},
+        ${data.stockLeadDays ?? DEFAULT_STOCK_LEAD_DAYS},
         ${data.defaultListId ?? null}
       )
       returning id
@@ -141,6 +150,7 @@ export const updateUpkeepItem = createServerFn({ method: "POST" })
         spareCount: z.number().int().min(0).max(24).optional(),
         qtyNeeded: z.number().int().min(1).max(12).optional(),
         lastReplacedAt: z.string().trim().optional().nullable(),
+        stockLeadDays: z.number().int().min(0).max(1095).optional(),
         defaultListId: z.number().int().positive().optional().nullable(),
       })
       .parse(input),
@@ -198,6 +208,13 @@ export const updateUpkeepItem = createServerFn({ method: "POST" })
       await sql`
         update upkeep_items
         set last_replaced_at = ${data.lastReplacedAt || null}, updated_at = now()
+        where id = ${data.itemId} and household_id = ${membership.id}
+      `;
+    }
+    if (typeof data.stockLeadDays === "number") {
+      await sql`
+        update upkeep_items
+        set stock_lead_days = ${data.stockLeadDays}, updated_at = now()
         where id = ${data.itemId} and household_id = ${membership.id}
       `;
     }
