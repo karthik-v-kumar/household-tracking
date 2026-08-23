@@ -168,7 +168,7 @@ function ListBody({ listId }: { listId: number }) {
   const usuals = useMutation({
     mutationFn: () => addUsualsToList({ data: { listId } }),
     onSuccess: async (result) => {
-      toast.success(result.added ? `Added ${result.added} usuals` : "Usuals already on the list");
+      toast.success(result.added ? `Added ${result.added} usual${result.added === 1 ? "" : "s"}` : "Usuals already on the list");
       await invalidate();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -179,8 +179,24 @@ function ListBody({ listId }: { listId: number }) {
     onSuccess: async (result) => {
       toast.success(
         result.cleared
-          ? `Cleared ${result.cleared}. Usuals stay ready for next week.`
+          ? `Cleared ${result.cleared}. Usuals are in the tray when you want them.`
           : "Nothing checked yet",
+      );
+      await invalidate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const nextShop = useMutation({
+    mutationFn: async () => {
+      await clearCheckedItems({ data: { listId } });
+      return addUsualsToList({ data: { listId } });
+    },
+    onSuccess: async (result) => {
+      toast.success(
+        result.added
+          ? `Ready — ${result.added} usual${result.added === 1 ? "" : "s"} on the list`
+          : "Cleared. No usuals waiting.",
       );
       await invalidate();
     },
@@ -211,6 +227,8 @@ function ListBody({ listId }: { listId: number }) {
   const color = listColor(list.color);
   const openItems = items.filter((item) => !item.checked);
   const bought = items.filter((item) => item.checked);
+  const missingUsuals = usualCatalog.filter((item) => !item.alreadyOnList);
+  const busyShop = clearBought.isPending || nextShop.isPending || usuals.isPending;
 
   return (
     <AppShell
@@ -251,10 +269,24 @@ function ListBody({ listId }: { listId: number }) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>Edit list</DropdownMenuItem>
             <DropdownMenuItem
+              disabled={usuals.isPending || missingUsuals.length === 0}
+              onSelect={() => usuals.mutate()}
+            >
+              {missingUsuals.length
+                ? `Add usuals (${missingUsuals.length})`
+                : "Usuals already on the list"}
+            </DropdownMenuItem>
+            <DropdownMenuItem
               disabled={clearBought.isPending || bought.length === 0}
               onSelect={() => clearBought.mutate()}
             >
               Clear bought
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={nextShop.isPending || (bought.length === 0 && missingUsuals.length === 0)}
+              onSelect={() => nextShop.mutate()}
+            >
+              Next shop — add usuals
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem danger onSelect={() => setDeleteOpen(true)}>
@@ -288,8 +320,15 @@ function ListBody({ listId }: { listId: number }) {
             title="Nothing here yet"
             body={
               usualCatalog.length
-                ? "Tap a usual in the tray, or drag it onto the list. You do not have to take all of them this week."
+                ? "Tap a usual in the tray, or add them all for this week's run. You don't have to take every one."
                 : "Add this week's items. Star anything you buy often — it lands in the tray next time."
+            }
+            action={
+              missingUsuals.length ? (
+                <Button onClick={() => usuals.mutate()} disabled={usuals.isPending}>
+                  Add {missingUsuals.length} usual{missingUsuals.length === 1 ? "" : "s"}
+                </Button>
+              ) : undefined
             }
           />
         ) : (
@@ -305,14 +344,47 @@ function ListBody({ listId }: { listId: number }) {
                 />
               ))}
               {openItems.length === 0 ? (
-                <p className="px-2 py-6 text-center text-sm text-muted">Cart is clear. Nice.</p>
+                <div className="grid gap-3 px-2 py-6 text-center">
+                  <p className="text-sm text-muted">Cart is clear. Nice.</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {bought.length > 0 ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={busyShop}
+                        onClick={() => clearBought.mutate()}
+                      >
+                        Clear bought
+                      </Button>
+                    ) : null}
+                    {usualCatalog.length > 0 ? (
+                      <Button
+                        size="sm"
+                        disabled={busyShop}
+                        onClick={() => nextShop.mutate()}
+                      >
+                        Next shop — add usuals
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               ) : null}
             </div>
             {bought.length > 0 ? (
               <section className="mt-6">
-                <h2 className="px-1 text-xs font-medium tracking-[0.16em] text-muted uppercase">
-                  Bought
-                </h2>
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <h2 className="text-xs font-medium tracking-[0.16em] text-muted uppercase">
+                    Bought
+                  </h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={clearBought.isPending}
+                    onClick={() => clearBought.mutate()}
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <div className="panel mt-2 px-3 py-1">
                   {bought.map((item) => (
                     <ItemRow

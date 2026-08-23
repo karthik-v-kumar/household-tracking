@@ -72,14 +72,14 @@ export function UsualsTray({
           />
         ))}
       </div>
-      {missing.length >= 2 && onAddRemaining ? (
+      {missing.length > 0 && onAddRemaining ? (
         <button
           type="button"
           className="civic-link shrink-0 text-xs text-muted hover:text-fg disabled:opacity-50"
           disabled={busy}
           onClick={onAddRemaining}
         >
-          Add remaining
+          {missing.length === 1 ? "Add" : `Add ${missing.length}`}
         </button>
       ) : null}
       {drag
