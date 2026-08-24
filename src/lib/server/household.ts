@@ -193,6 +193,30 @@ export const regenerateInviteCode = createServerFn({ method: "POST" })
     throw new Error("Could not refresh the invite code.");
   });
 
+export const updateMyName = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) =>
+    z.object({ name: z.string().trim().min(1).max(80) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const sql = await getSqlClient();
+    await sql`
+      update "user"
+      set name = ${data.name}, "updatedAt" = now()
+      where id = ${context.userId}
+    `;
+    const membership = await getMembership(sql, context.userId);
+    if (membership) {
+      await sql`
+        update household_members
+        set display_name = ${data.name}
+        where household_id = ${membership.id} and user_id = ${context.userId}
+      `;
+      await touchHousehold(sql, membership.id);
+    }
+    return { name: data.name };
+  });
+
 export const leaveHousehold = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
