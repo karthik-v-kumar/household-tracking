@@ -1,12 +1,15 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-// Pantry goods on a shelf — stocked, not a 2x2 of empty boxes.
+// Horizontal checklist — shopping list, not a bar chart.
 const MARK = `
-  <rect x="5" y="24.2" width="22" height="2.2" rx="1.1" fill="currentColor"/>
-  <rect x="6.3" y="7" width="5.5" height="16.4" rx="2.7" fill="currentColor"/>
-  <rect x="13.25" y="11.2" width="5.6" height="12.2" rx="1.7" fill="currentColor"/>
-  <rect x="20.3" y="8.4" width="5.2" height="15" rx="2.6" fill="currentColor"/>
+  <path d="M6.1 10.8 L8.9 13.8 L14.8 6.6" fill="none" stroke="currentColor"
+    stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="16.4" y="8.55" width="10.2" height="2.45" rx="1.22" fill="currentColor"/>
+  <circle cx="8.5" cy="16.85" r="1.85" fill="currentColor"/>
+  <rect x="12.2" y="15.6" width="14.4" height="2.45" rx="1.22" fill="currentColor"/>
+  <circle cx="8.5" cy="23.55" r="1.85" fill="currentColor"/>
+  <rect x="12.2" y="22.3" width="10.6" height="2.45" rx="1.22" fill="currentColor"/>
 `;
 
 const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
