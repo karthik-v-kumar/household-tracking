@@ -18,6 +18,8 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { addLowInventoryToLists } from "@/lib/server/inventory";
 import { addListItem, deleteList } from "@/lib/server/lists";
 import { addNeededUpkeepToLists } from "@/lib/server/upkeep";
+import { formatUpkeepDue } from "@/lib/upkeep-logic";
+import { INVENTORY_LEVELS } from "@/lib/constants";
 import type { ShoppingList, Usual } from "@/lib/types";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -46,9 +48,9 @@ function HomeContent({
   const low = overview.lowInventory;
   const due = overview.dueUpkeep ?? [];
   const addLow = useMutation({
-    mutationFn: () => addLowInventoryToLists({ data: {} }),
+    mutationFn: (itemIds?: number[]) => addLowInventoryToLists({ data: { itemIds } }),
     onSuccess: async (result) => {
-      toast.success(result.added ? `Added ${result.added} to lists` : "Already on a list");
+      toast.success(result.added ? `Added ${result.added} to a list` : "Already on a list");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["overview"] }),
         queryClient.invalidateQueries({ queryKey: ["inventory"] }),
@@ -57,9 +59,9 @@ function HomeContent({
     onError: (err: Error) => toast.error(err.message),
   });
   const addFilters = useMutation({
-    mutationFn: () => addNeededUpkeepToLists({ data: {} }),
+    mutationFn: (itemIds?: number[]) => addNeededUpkeepToLists({ data: { itemIds } }),
     onSuccess: async (result) => {
-      toast.success(result.added ? `Added ${result.added} to lists` : "Already on a list");
+      toast.success(result.added ? `Added ${result.added} to a list` : "Already on a list");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["overview"] }),
         queryClient.invalidateQueries({ queryKey: ["upkeep"] }),
@@ -142,40 +144,46 @@ function HomeContent({
     >
       <ShareInviteBanner overview={overview} />
       {low.length > 0 ? (
-        <section className="panel mb-4 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-display text-base font-medium tracking-tight">Running low</h2>
-              <p className="mt-0.5 text-sm text-muted">{low.map((item) => item.name).join(", ")}</p>
-            </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={addLow.isPending || low.every((i) => i.onAList)}
-              onClick={() => addLow.mutate()}
-            >
-              Add
-            </Button>
-          </div>
+        <section className="panel mb-4 px-4 py-3">
+          <h2 className="font-display text-base font-medium tracking-tight">Running low</h2>
+          <p className="mt-0.5 text-xs text-muted">Add only what you actually want this week.</p>
+          <ul className="mt-2 divide-y divide-border">
+            {low.map((item) => {
+              const level = INVENTORY_LEVELS.find((row) => row.id === item.effectiveLevel)?.label ?? item.effectiveLevel;
+              return (
+                <li key={item.id}>
+                  <NeedRow
+                    name={item.name}
+                    detail={[level, item.defaultListName].filter(Boolean).join(" · ")}
+                    onAList={item.onAList}
+                    busy={addLow.isPending && addLow.variables?.[0] === item.id}
+                    onAdd={() => addLow.mutate([item.id])}
+                  />
+                </li>
+              );
+            })}
+          </ul>
         </section>
       ) : null}
 
       {due.length > 0 ? (
-        <section className="panel mb-4 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-display text-base font-medium tracking-tight">Filters</h2>
-              <p className="mt-0.5 text-sm text-muted">{due.map((item) => item.name).join(", ")}</p>
-            </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={addFilters.isPending || due.every((i) => i.onAList || !i.needToBuy)}
-              onClick={() => addFilters.mutate()}
-            >
-              Add
-            </Button>
-          </div>
+        <section className="panel mb-4 px-4 py-3">
+          <h2 className="font-display text-base font-medium tracking-tight">Filters</h2>
+          <p className="mt-0.5 text-xs text-muted">Add the ones you want to pick up now.</p>
+          <ul className="mt-2 divide-y divide-border">
+            {due.map((item) => (
+              <li key={item.id}>
+                <NeedRow
+                  name={item.name}
+                  detail={[formatUpkeepDue(item.daysUntil), item.defaultListName].filter(Boolean).join(" · ")}
+                  onAList={item.onAList}
+                  canAdd={item.needToBuy}
+                  busy={addFilters.isPending && addFilters.variables?.[0] === item.id}
+                  onAdd={() => addFilters.mutate([item.id])}
+                />
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
@@ -254,5 +262,39 @@ function HomeContent({
         onConfirm={() => deleting && removeList.mutate(deleting.id)}
       />
     </AppShell>
+  );
+}
+
+function NeedRow({
+  name,
+  detail,
+  onAList,
+  canAdd = true,
+  busy,
+  onAdd,
+}: {
+  name: string;
+  detail?: string;
+  onAList: boolean;
+  canAdd?: boolean;
+  busy?: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex min-h-12 items-center gap-3 py-1">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{name}</p>
+        {detail ? <p className="truncate text-xs text-muted">{detail}</p> : null}
+      </div>
+      {onAList ? (
+        <span className="shrink-0 text-xs text-muted">On a list</span>
+      ) : canAdd ? (
+        <Button size="sm" variant="secondary" disabled={busy} onClick={onAdd}>
+          Add
+        </Button>
+      ) : (
+        <span className="shrink-0 text-xs text-muted">Not yet</span>
+      )}
+    </div>
   );
 }
