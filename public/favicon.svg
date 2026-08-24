@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" fill="#F3EEE4"/>
   <g fill="#1C1915">
-  <path d="M6.1 10.8 L8.9 13.8 L14.8 6.6" fill="none" stroke="currentColor"
-    stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="16.4" y="8.55" width="10.2" height="2.45" rx="1.22" fill="currentColor"/>
-  <circle cx="8.5" cy="16.85" r="1.85" fill="currentColor"/>
-  <rect x="12.2" y="15.6" width="14.4" height="2.45" rx="1.22" fill="currentColor"/>
-  <circle cx="8.5" cy="23.55" r="1.85" fill="currentColor"/>
-  <rect x="12.2" y="22.3" width="10.6" height="2.45" rx="1.22" fill="currentColor"/>
+  <path d="M5.7 8.85 L8.55 11.7 L13.05 5.55" fill="none" stroke="currentColor"
+    stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="15.5" y="6.55" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
+  <circle cx="8.7" cy="16.35" r="2.45" fill="currentColor"/>
+  <rect x="15.5" y="14.68" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
+  <circle cx="8.7" cy="24.7" r="2.45" fill="currentColor"/>
+  <rect x="15.5" y="23.02" width="8.4" height="3.35" rx="1.67" fill="currentColor"/>
 </g>
 </svg>

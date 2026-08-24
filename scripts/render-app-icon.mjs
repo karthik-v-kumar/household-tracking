@@ -1,15 +1,16 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-// Horizontal checklist — shopping list, not a bar chart.
+// Chunky, optically centered list. Check stays in the bullet column
+// (doesn't kiss row 2, doesn't shove line 1 aside).
 const MARK = `
-  <path d="M6.1 10.8 L8.9 13.8 L14.8 6.6" fill="none" stroke="currentColor"
-    stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="16.4" y="8.55" width="10.2" height="2.45" rx="1.22" fill="currentColor"/>
-  <circle cx="8.5" cy="16.85" r="1.85" fill="currentColor"/>
-  <rect x="12.2" y="15.6" width="14.4" height="2.45" rx="1.22" fill="currentColor"/>
-  <circle cx="8.5" cy="23.55" r="1.85" fill="currentColor"/>
-  <rect x="12.2" y="22.3" width="10.6" height="2.45" rx="1.22" fill="currentColor"/>
+  <path d="M5.7 8.85 L8.55 11.7 L13.05 5.55" fill="none" stroke="currentColor"
+    stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="15.5" y="6.55" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
+  <circle cx="8.7" cy="16.35" r="2.45" fill="currentColor"/>
+  <rect x="15.5" y="14.68" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
+  <circle cx="8.7" cy="24.7" r="2.45" fill="currentColor"/>
+  <rect x="15.5" y="23.02" width="8.4" height="3.35" rx="1.67" fill="currentColor"/>
 `;
 
 const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
@@ -57,7 +58,7 @@ await shot(512, 512, 512, "/workspace/public/icon-512.png");
 await shot(180, 180, 180, "/workspace/public/apple-touch-icon.png");
 await shot(180, 180, 180, "/workspace/public/apple-touch-icon-precomposed.png");
 await shot(180, 180, 180, "/workspace/public/__grok/icon-180.png");
-await shot(1200, 630, 360, "/workspace/public/og.jpg", "jpeg");
+await shot(1200, 630, 440, "/workspace/public/og.jpg", "jpeg");
 
 await browser.close();
 copyFileSync("/workspace/public/icon-180.png", "/workspace/public/__grok/icon-180.png");
