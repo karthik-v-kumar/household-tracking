@@ -1,12 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" fill="#F3EEE4"/>
-  <g color="#1C1915">
-    <path d="M 86.04 38.29 A 35.8 35.8 0 1 1 49.44 33.80"
-      fill="none" stroke="currentColor" stroke-width="13.8" stroke-linecap="round"/>
-    <path d="M 58.12 17.46 L 55.56 46.56 L 35.43 35.86 Z"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <rect width="1024" height="1024" fill="#F3EEE4"/>
+    <g color="#1C1915" transform="translate(512.47 542.44) scale(0.9365)">
+    <path d="M 204.41 -243.60 A 318.00 318.00 0 1 1 -139.40 -285.82"
+      fill="none" stroke="currentColor" stroke-width="132" stroke-linecap="round"/>
+    <path d="M -45.68 -448.14
+             L -82.01 -158.18
+             L -278.63 -271.70 Z"
       fill="currentColor"/>
-    <path d="M 46.4 70.8 L 58.6 84.2 L 90.6 48.4"
-      fill="none" stroke="currentColor" stroke-width="13.5"
+    <path d="M -133.56 25.44
+             L -25.44 146.28
+             L 184.44 -152.64"
+      fill="none" stroke="currentColor" stroke-width="128.04"
       stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-</svg>
+  </svg>
