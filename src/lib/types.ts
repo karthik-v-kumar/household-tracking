@@ -87,16 +87,25 @@ export type UpkeepItem = {
   stockFromAt: string | null;
 };
 
+export type Usual = {
+  id: number;
+  name: string;
+  defaultListId: number | null;
+  defaultListName: string | null;
+  alreadyOnList: boolean;
+};
+
 export type Overview = {
   household: Household;
   members: HouseholdMember[];
   lists: ShoppingList[];
   lowInventory: InventoryItem[];
   dueUpkeep: UpkeepItem[];
+  usuals: Usual[];
 };
 
 export type ListDetail = {
   list: ShoppingList;
   items: ListItem[];
-  usuals: { id: number; name: string; alreadyOnList: boolean }[];
+  usuals: Usual[];
 };

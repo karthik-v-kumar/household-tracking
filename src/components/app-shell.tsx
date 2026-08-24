@@ -18,6 +18,7 @@ export function AppShell({
   stat,
   actions,
   back,
+  rail,
   dock,
   children,
 }: {
@@ -26,6 +27,7 @@ export function AppShell({
   stat?: string;
   actions?: ReactNode;
   back?: ReactNode;
+  rail?: ReactNode;
   dock?: ReactNode;
   children: ReactNode;
 }) {
@@ -57,6 +59,10 @@ export function AppShell({
         </div>
         {back ? <div className="mt-3">{back}</div> : null}
       </header>
+
+      {rail ? (
+        <div className="shrink-0 border-b border-border/80 bg-bg px-5 py-3">{rail}</div>
+      ) : null}
 
       <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-6">
         {eyebrow ? (

@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Star } from "lucide-react";
+import type { Usual } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-export type UsualChip = {
-  id: number;
-  name: string;
-  alreadyOnList: boolean;
-};
 
 type DragState = {
   id: number;
@@ -33,20 +28,27 @@ export function UsualsTray({
   usuals,
   onAdd,
   onAddRemaining,
+  remainingCount,
   onDraggingChange,
   busy,
+  compact,
+  hint,
 }: {
-  usuals: UsualChip[];
-  onAdd: (name: string) => void;
+  usuals: Usual[];
+  onAdd: (usual: Usual) => void;
   onAddRemaining?: () => void;
+  remainingCount?: number;
   onDraggingChange?: (dragging: boolean) => void;
   busy?: boolean;
+  compact?: boolean;
+  hint?: string;
 }) {
   const ordered = [
     ...usuals.filter((item) => !item.alreadyOnList),
     ...usuals.filter((item) => item.alreadyOnList),
   ];
   const missing = ordered.filter((item) => !item.alreadyOnList);
+  const addCount = remainingCount ?? missing.length;
   const [drag, setDrag] = useState<DragState | null>(null);
 
   useEffect(() => {
@@ -55,33 +57,45 @@ export function UsualsTray({
     return () => setDropActive(false);
   }, [drag, onDraggingChange]);
 
-  if (usuals.length === 0) return null;
-
   return (
-    <div className="flex items-center gap-2">
-      <p className="shrink-0 text-xs font-medium tracking-[0.16em] text-muted uppercase">Tray</p>
-      <div className="chip-tray min-w-0 flex-1" aria-label="Usuals tray">
-        {ordered.map((item) => (
-          <UsualChipButton
-            key={item.id}
-            item={item}
-            busy={busy}
-            dragging={drag?.id === item.id}
-            onAdd={() => onAdd(item.name)}
-            onDragChange={setDrag}
-          />
-        ))}
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">Usuals</p>
+        {addCount > 0 && onAddRemaining ? (
+          <button
+            type="button"
+            className="civic-link shrink-0 text-xs text-muted hover:text-fg disabled:opacity-50"
+            disabled={busy}
+            onClick={onAddRemaining}
+          >
+            {addCount === 1 ? "Add to list" : `Add ${addCount} to list`}
+          </button>
+        ) : null}
       </div>
-      {missing.length > 0 && onAddRemaining ? (
-        <button
-          type="button"
-          className="civic-link shrink-0 text-xs text-muted hover:text-fg disabled:opacity-50"
-          disabled={busy}
-          onClick={onAddRemaining}
-        >
-          {missing.length === 1 ? "Add" : `Add ${missing.length}`}
-        </button>
-      ) : null}
+      {usuals.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">
+          {hint ?? "Star an item while you shop. It stays here so you can drop it on a list any week."}
+        </p>
+      ) : (
+        <>
+          {hint ? <p className="mt-1 text-xs text-subtle">{hint}</p> : null}
+          <div
+            className={cn("chip-tray mt-2", compact && "max-h-[6.25rem]")}
+            aria-label="Usuals tray"
+          >
+            {ordered.map((item) => (
+              <UsualChipButton
+                key={item.id}
+                item={item}
+                busy={busy}
+                dragging={drag?.id === item.id}
+                onAdd={() => onAdd(item)}
+                onDragChange={setDrag}
+              />
+            ))}
+          </div>
+        </>
+      )}
       {drag
         ? createPortal(
             <div
@@ -105,7 +119,7 @@ function UsualChipButton({
   onAdd,
   onDragChange,
 }: {
-  item: UsualChip;
+  item: Usual;
   busy?: boolean;
   dragging: boolean;
   onAdd: () => void;
@@ -125,7 +139,7 @@ function UsualChipButton({
     return (
       <span
         className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-bg px-3.5 text-sm text-muted select-none"
-        aria-label={`${item.name}, already on list`}
+        aria-label={`${item.name}, already on a list`}
       >
         <Check className="size-3" strokeWidth={2.4} />
         {item.name}
@@ -137,7 +151,11 @@ function UsualChipButton({
     <button
       type="button"
       disabled={busy}
-      aria-label={`Add ${item.name} to list`}
+      aria-label={
+        item.defaultListName
+          ? `Add ${item.name} to ${item.defaultListName}`
+          : `Add ${item.name} to list`
+      }
       className={cn(
         "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-fg/20 bg-bg px-3.5 text-sm select-none transition-[background-color,opacity] duration-200 hover:bg-bg-elevated",
         dragging && "opacity-40",

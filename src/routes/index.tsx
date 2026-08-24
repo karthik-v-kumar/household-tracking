@@ -11,13 +11,14 @@ import { ListCard, NewListCard } from "@/components/list-card";
 import { LoginPending } from "@/components/login-screen";
 import { LandingPage } from "@/components/landing-page";
 import { ShareInviteBanner } from "@/components/share-invite";
+import { UsualsTray } from "@/components/usuals-tray";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { addLowInventoryToLists } from "@/lib/server/inventory";
-import { deleteList } from "@/lib/server/lists";
+import { addListItem, deleteList } from "@/lib/server/lists";
 import { addNeededUpkeepToLists } from "@/lib/server/upkeep";
-import type { ShoppingList } from "@/lib/types";
+import type { ShoppingList, Usual } from "@/lib/types";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -75,8 +76,43 @@ function HomeContent({
     },
     onError: (err: Error) => toast.error(err.message),
   });
+  const addUsual = useMutation({
+    mutationFn: (usual: Usual) => {
+      const listId = usual.defaultListId ?? overview.lists[0]?.id;
+      if (!listId) throw new Error("Create a list first.");
+      return addListItem({ data: { listId, name: usual.name, isStaple: true } });
+    },
+    onSuccess: async (result, usual) => {
+      const listName =
+        usual.defaultListName ?? overview.lists.find((list) => list.id === usual.defaultListId)?.name ?? overview.lists[0]?.name;
+      if (result.already) toast.message(`Already on ${listName ?? "the list"}`);
+      else toast.success(`Added to ${listName ?? "the list"}`);
+      await queryClient.invalidateQueries({ queryKey: ["overview"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+  const addAllUsuals = useMutation({
+    mutationFn: async () => {
+      const fallback = overview.lists[0]?.id;
+      if (!fallback) throw new Error("Create a list first.");
+      let added = 0;
+      for (const usual of overview.usuals) {
+        if (usual.alreadyOnList) continue;
+        const listId = usual.defaultListId ?? fallback;
+        const result = await addListItem({ data: { listId, name: usual.name, isStaple: true } });
+        if (!result.already) added += 1;
+      }
+      return { added };
+    },
+    onSuccess: async (result) => {
+      toast.success(result.added ? `Added ${result.added} usual${result.added === 1 ? "" : "s"}` : "Usuals already on lists");
+      await queryClient.invalidateQueries({ queryKey: ["overview"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const remaining = overview.lists.reduce((sum, list) => sum + list.uncheckedCount, 0);
+  const missingUsuals = (overview.usuals ?? []).filter((item) => !item.alreadyOnList);
 
   return (
     <AppShell
@@ -91,6 +127,17 @@ function HomeContent({
         <Button size="icon-sm" onClick={() => { setEditing(null); setNewOpen(true); }} aria-label="New list">
           <Plus className="size-4" />
         </Button>
+      }
+      rail={
+        <UsualsTray
+          usuals={overview.usuals ?? []}
+          onAdd={(usual) => addUsual.mutate(usual)}
+          onAddRemaining={missingUsuals.length && overview.lists.length ? () => addAllUsuals.mutate() : undefined}
+          remainingCount={missingUsuals.length}
+          busy={addUsual.isPending || addAllUsuals.isPending}
+          compact
+          hint="Add whenever — leftover items can sit on a list until you're ready."
+        />
       }
     >
       <ShareInviteBanner overview={overview} />

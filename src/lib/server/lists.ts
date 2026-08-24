@@ -13,6 +13,7 @@ import type {
   ListItem,
   Overview,
   ShoppingList,
+  Usual,
 } from "@/lib/types";
 import type { Sql } from "@/lib/db";
 import {
@@ -103,6 +104,32 @@ async function loadMembers(
   }));
 }
 
+async function loadUsuals(
+  sql: Sql,
+  householdId: number,
+  onList: Set<string>,
+): Promise<Usual[]> {
+  const rows = await sql<{
+    id: number;
+    name: string;
+    default_list_id: number | null;
+    default_list_name: string | null;
+  }>`
+    select c.id, c.name, c.default_list_id, l.name as default_list_name
+    from catalog_items c
+    left join lists l on l.id = c.default_list_id
+    where c.household_id = ${householdId} and c.is_staple = true
+    order by c.name asc
+  `;
+  return rows.map((row) => ({
+    id: Number(row.id),
+    name: row.name,
+    defaultListId: row.default_list_id == null ? null : Number(row.default_list_id),
+    defaultListName: row.default_list_name,
+    alreadyOnList: onList.has(row.name.toLowerCase()),
+  }));
+}
+
 export async function getOverviewData(
   sql: Sql,
   userId: string,
@@ -157,7 +184,7 @@ export async function getOverviewData(
     createdAt: toIso(membership.created_at) ?? new Date().toISOString(),
   };
 
-  return { household, members, lists, lowInventory, dueUpkeep };
+  return { household, members, lists, lowInventory, dueUpkeep, usuals: await loadUsuals(sql, membership.id, onList) };
 }
 
 export const createList = createServerFn({ method: "POST" })
@@ -275,20 +302,8 @@ export const getListDetail = createServerFn({ method: "GET" })
       createdAt: toIso(row.created_at) ?? new Date().toISOString(),
     }));
 
-    const usualRows = await sql<{ id: number; name: string }>`
-      select id, name
-      from catalog_items
-      where household_id = ${membership.id}
-        and is_staple = true
-        and (default_list_id = ${data.listId} or default_list_id is null)
-      order by name asc
-    `;
     const onList = new Set(items.map((i) => i.name.toLowerCase()));
-    const usuals = usualRows.map((row) => ({
-      id: Number(row.id),
-      name: row.name,
-      alreadyOnList: onList.has(row.name.toLowerCase()),
-    }));
+    const usuals = await loadUsuals(sql, membership.id, onList);
 
     return { list, items, usuals };
   });

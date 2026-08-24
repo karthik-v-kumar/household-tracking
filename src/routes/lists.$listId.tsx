@@ -227,7 +227,10 @@ function ListBody({ listId }: { listId: number }) {
   const color = listColor(list.color);
   const openItems = items.filter((item) => !item.checked);
   const bought = items.filter((item) => item.checked);
-  const missingUsuals = usualCatalog.filter((item) => !item.alreadyOnList);
+  const missingUsuals = usualCatalog.filter(
+    (item) =>
+      !item.alreadyOnList && (item.defaultListId == null || item.defaultListId === listId),
+  );
   const busyShop = clearBought.isPending || nextShop.isPending || usuals.isPending;
 
   return (
@@ -295,18 +298,19 @@ function ListBody({ listId }: { listId: number }) {
           </DropdownMenuContent>
         </DropdownMenu>
       }
-      dock={
-        <>
-          <UsualsTray
-            usuals={usualCatalog}
-            onAdd={(name) => add.mutate({ name, isStaple: true })}
-            onAddRemaining={() => usuals.mutate()}
-            onDraggingChange={setDraggingUsual}
-            busy={add.isPending || usuals.isPending}
-          />
-          <AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />
-        </>
+      rail={
+        <UsualsTray
+          usuals={usualCatalog}
+          onAdd={(usual) => add.mutate({ name: usual.name, isStaple: true })}
+          onAddRemaining={missingUsuals.length ? () => usuals.mutate() : undefined}
+          remainingCount={missingUsuals.length}
+          onDraggingChange={setDraggingUsual}
+          busy={add.isPending || usuals.isPending}
+          compact
+          hint="Tap any time — leftover items on the list can stay."
+        />
       }
+      dock={<AddItemBar listId={listId} onAdd={(input) => add.mutate(input)} busy={add.isPending} />}
     >
       <div
         data-usuals-drop
@@ -320,7 +324,7 @@ function ListBody({ listId }: { listId: number }) {
             title="Nothing here yet"
             body={
               usualCatalog.length
-                ? "Tap a usual in the tray, or add them all for this week's run. You don't have to take every one."
+                ? "Tap a usual up top, or add this list's usuals. Leftovers can stay — you don't have to finish the list first."
                 : "Add this week's items. Star anything you buy often — it lands in the tray next time."
             }
             action={

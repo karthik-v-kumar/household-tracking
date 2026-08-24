@@ -83,9 +83,9 @@ try {
 
   await page.getByRole("button", { name: "List actions" }).click();
   await page.getByRole("menuitem", { name: "Clear bought" }).click();
-  await page.getByRole("button", { name: "Add Oat milk to list" }).waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: /Add Oat milk to/ }).waitFor({ timeout: 10000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-tray.png" });
-  await page.getByRole("button", { name: "Add Oat milk to list" }).click();
+  await page.getByRole("button", { name: /Add Oat milk to/ }).click();
   await page.getByRole("button", { name: "Check Oat milk" }).waitFor({ timeout: 10000 });
   await page.screenshot({ path: "/workspace/screenshots/qa-tray-added.png" });
 
