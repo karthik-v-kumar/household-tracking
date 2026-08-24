@@ -1,21 +1,55 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-// Chunky, optically centered list. Check stays in the bullet column
-// (doesn't kiss row 2, doesn't shove line 1 aside).
-const MARK = `
-  <path d="M5.7 8.85 L8.55 11.7 L13.05 5.55" fill="none" stroke="currentColor"
-    stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="15.5" y="6.55" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
-  <circle cx="8.7" cy="16.35" r="2.45" fill="currentColor"/>
-  <rect x="15.5" y="14.68" width="11.6" height="3.35" rx="1.67" fill="currentColor"/>
-  <circle cx="8.7" cy="24.7" r="2.45" fill="currentColor"/>
-  <rect x="15.5" y="23.02" width="8.4" height="3.35" rx="1.67" fill="currentColor"/>
-`;
+const CREAM = "#F3EEE4";
+const INK = "#1C1915";
 
-const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#F3EEE4"/>
-  <g fill="#1C1915">${MARK}</g>
+function mark() {
+  const cx = 64;
+  const cy = 66.5;
+  const r = 35.8;
+  const startDeg = 308;
+  const endDeg = 246;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const pt = (deg, rad = r) => {
+    const a = toRad(deg);
+    return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)];
+  };
+  const [sx, sy] = pt(startDeg);
+  const [ex, ey] = pt(endDeg);
+
+  const headAngle = toRad(-62);
+  const hx = Math.cos(headAngle);
+  const hy = Math.sin(headAngle);
+  const nx = -hy;
+  const ny = hx;
+  const tip = 18.5;
+  const half = 11.4;
+  const inset = 8.4;
+  const tipX = ex + hx * tip;
+  const tipY = ey + hy * tip;
+  const b1x = ex - hx * inset + nx * half;
+  const b1y = ey - hy * inset + ny * half;
+  const b2x = ex - hx * inset - nx * half;
+  const b2y = ey - hy * inset - ny * half;
+  const f = (n) => n.toFixed(2);
+
+  return `
+    <path d="M ${f(sx)} ${f(sy)} A ${r} ${r} 0 1 1 ${f(ex)} ${f(ey)}"
+      fill="none" stroke="currentColor" stroke-width="13.8" stroke-linecap="round"/>
+    <path d="M ${f(tipX)} ${f(tipY)} L ${f(b1x)} ${f(b1y)} L ${f(b2x)} ${f(b2y)} Z"
+      fill="currentColor"/>
+    <path d="M 46.4 70.8 L 58.6 84.2 L 90.6 48.4"
+      fill="none" stroke="currentColor" stroke-width="13.5"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  `;
+}
+
+const MARK = mark();
+
+const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="${CREAM}"/>
+  <g color="${INK}">${MARK}</g>
 </svg>
 `;
 
@@ -26,12 +60,12 @@ function pageHtml(width, height, svgSize) {
 <html>
 <head>
   <style>
-    html, body { margin: 0; width: ${width}px; height: ${height}px; background: #F3EEE4; }
-    svg { display: block; position: absolute; left: ${x}px; top: ${y}px; width: ${svgSize}px; height: ${svgSize}px; color: #1C1915; }
+    html, body { margin: 0; width: ${width}px; height: ${height}px; background: ${CREAM}; }
+    svg { display: block; position: absolute; left: ${x}px; top: ${y}px; width: ${svgSize}px; height: ${svgSize}px; color: ${INK}; }
   </style>
 </head>
 <body>
-  <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">${MARK}</svg>
+  <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">${MARK}</svg>
 </body>
 </html>`;
 }
