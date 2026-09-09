@@ -29,6 +29,8 @@ export function UsualsTray({
   onAdd,
   onAddRemaining,
   remainingCount,
+  onEdit,
+  onManage,
   onDraggingChange,
   busy,
   compact,
@@ -38,6 +40,8 @@ export function UsualsTray({
   onAdd: (usual: Usual) => void;
   onAddRemaining?: () => void;
   remainingCount?: number;
+  onEdit?: (usual: Usual) => void;
+  onManage?: () => void;
   onDraggingChange?: (dragging: boolean) => void;
   busy?: boolean;
   compact?: boolean;
@@ -57,16 +61,27 @@ export function UsualsTray({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">Usuals</p>
-        {addCount > 0 && onAddRemaining ? (
-          <button
-            type="button"
-            className="civic-link shrink-0 text-xs text-muted hover:text-fg disabled:opacity-50"
-            disabled={busy}
-            onClick={onAddRemaining}
-          >
-            {addCount === 1 ? "Add to list" : `Add ${addCount} to list`}
-          </button>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {onManage ? (
+            <button
+              type="button"
+              className="civic-link shrink-0 text-xs text-muted hover:text-fg"
+              onClick={onManage}
+            >
+              Edit
+            </button>
+          ) : null}
+          {addCount > 0 && onAddRemaining ? (
+            <button
+              type="button"
+              className="civic-link shrink-0 text-xs text-muted hover:text-fg disabled:opacity-50"
+              disabled={busy}
+              onClick={onAddRemaining}
+            >
+              {addCount === 1 ? "Add to list" : `Add ${addCount} to list`}
+            </button>
+          ) : null}
+        </div>
       </div>
       {missing.length === 0 ? (
         <p className="mt-2 text-sm text-muted">
@@ -86,6 +101,7 @@ export function UsualsTray({
                 busy={busy}
                 dragging={drag?.id === item.id}
                 onAdd={() => onAdd(item)}
+                onEdit={onEdit ? () => onEdit(item) : undefined}
                 onDragChange={setDrag}
               />
             ))}
@@ -113,18 +129,29 @@ function UsualChipButton({
   busy,
   dragging,
   onAdd,
+  onEdit,
   onDragChange,
 }: {
   item: Usual;
   busy?: boolean;
   dragging: boolean;
   onAdd: () => void;
+  onEdit?: () => void;
   onDragChange: (drag: DragState | null) => void;
 }) {
-  const mode = useRef<"undecided" | "scroll" | "drag">("undecided");
+  const mode = useRef<"undecided" | "scroll" | "drag" | "edit">("undecided");
   const origin = useRef<{ x: number; y: number } | null>(null);
+  const hold = useRef<number | null>(null);
+
+  function clearHold() {
+    if (hold.current) {
+      window.clearTimeout(hold.current);
+      hold.current = null;
+    }
+  }
 
   function reset() {
+    clearHold();
     mode.current = "undecided";
     origin.current = null;
     onDragChange(null);
@@ -160,6 +187,16 @@ function UsualChipButton({
         if (event.button !== 0) return;
         origin.current = { x: event.clientX, y: event.clientY };
         mode.current = "undecided";
+        if (onEdit) {
+          hold.current = window.setTimeout(() => {
+            mode.current = "edit";
+            hold.current = null;
+            if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+              navigator.vibrate(8);
+            }
+            onEdit();
+          }, 480);
+        }
       }}
       onPointerMove={(event) => {
         if (!origin.current) return;
@@ -169,6 +206,7 @@ function UsualChipButton({
 
         if (mode.current === "undecided") {
           if (dist < 8) return;
+          clearHold();
           if (Math.abs(dx) > Math.abs(dy)) {
             mode.current = "scroll";
             return;
@@ -177,6 +215,7 @@ function UsualChipButton({
           event.currentTarget.setPointerCapture(event.pointerId);
         }
 
+        if (mode.current === "edit") return;
         if (mode.current !== "drag") return;
         event.preventDefault();
         const over = isOverDrop(event.clientX, event.clientY);
@@ -192,9 +231,10 @@ function UsualChipButton({
         if (!origin.current) return;
         const wasDrag = mode.current === "drag";
         const wasScroll = mode.current === "scroll";
+        const wasEdit = mode.current === "edit";
         const over = wasDrag && isOverDrop(event.clientX, event.clientY);
         reset();
-        if (wasScroll) return;
+        if (wasScroll || wasEdit) return;
         if (wasDrag) {
           if (over) onAdd();
           return;

@@ -104,6 +104,59 @@ async function loadMembers(
   }));
 }
 
+async function loadUsualListLinks(
+  sql: Sql,
+  householdId: number,
+): Promise<Map<number, { id: number; name: string }[]>> {
+  const map = new Map<number, { id: number; name: string }[]>();
+  try {
+    const rows = await sql<{ catalog_item_id: number; list_id: number; list_name: string }>`
+      select cil.catalog_item_id, cil.list_id, l.name as list_name
+      from catalog_item_lists cil
+      join lists l on l.id = cil.list_id
+      where l.household_id = ${householdId}
+    `;
+    for (const row of rows) {
+      const id = Number(row.catalog_item_id);
+      const current = map.get(id) ?? [];
+      current.push({ id: Number(row.list_id), name: row.list_name });
+      map.set(id, current);
+    }
+  } catch {
+    // catalog_item_lists lands in 0006; fall back to default_list_id until then.
+  }
+  return map;
+}
+
+async function setUsualLists(
+  sql: Sql,
+  householdId: number,
+  catalogItemId: number,
+  listIds: number[],
+) {
+  const unique = [...new Set(listIds)];
+  for (const listId of unique) {
+    await assertListInHousehold(sql, listId, householdId);
+  }
+  try {
+    await sql`delete from catalog_item_lists where catalog_item_id = ${catalogItemId}`;
+    for (const listId of unique) {
+      await sql`
+        insert into catalog_item_lists (catalog_item_id, list_id)
+        values (${catalogItemId}, ${listId})
+        on conflict do nothing
+      `;
+    }
+  } catch {
+    // table may not exist yet in a stale preview; default_list_id still updates
+  }
+  await sql`
+    update catalog_items
+    set default_list_id = ${unique[0] ?? null}
+    where id = ${catalogItemId} and household_id = ${householdId}
+  `;
+}
+
 async function loadUsuals(
   sql: Sql,
   householdId: number,
@@ -121,13 +174,30 @@ async function loadUsuals(
     where c.household_id = ${householdId} and c.is_staple = true
     order by c.name asc
   `;
-  return rows.map((row) => ({
-    id: Number(row.id),
-    name: row.name,
-    defaultListId: row.default_list_id == null ? null : Number(row.default_list_id),
-    defaultListName: row.default_list_name,
-    alreadyOnList: onList.has(row.name.toLowerCase()),
-  }));
+  const links = await loadUsualListLinks(sql, householdId);
+  return rows.map((row) => {
+    const id = Number(row.id);
+    const assigned = links.get(id) ?? [];
+    const listIds = assigned.length
+      ? assigned.map((item) => item.id)
+      : row.default_list_id == null
+        ? []
+        : [Number(row.default_list_id)];
+    const listNames = assigned.length
+      ? assigned.map((item) => item.name)
+      : row.default_list_name
+        ? [row.default_list_name]
+        : [];
+    return {
+      id,
+      name: row.name,
+      defaultListId: listIds[0] ?? null,
+      defaultListName: listNames[0] ?? null,
+      listIds,
+      listNames,
+      alreadyOnList: onList.has(row.name.toLowerCase()),
+    };
+  });
 }
 
 export async function getOverviewData(
@@ -323,13 +393,22 @@ async function upsertCatalog(
   `;
   const found = existing[0];
   if (found) {
-    if (asStaple && (!found.is_staple || found.default_list_id == null)) {
+    if (asStaple && !found.is_staple) {
       await sql`
         update catalog_items
         set is_staple = true,
             default_list_id = coalesce(default_list_id, ${listId})
         where id = ${found.id} and household_id = ${householdId}
       `;
+      try {
+        await sql`
+          insert into catalog_item_lists (catalog_item_id, list_id)
+          values (${found.id}, ${listId})
+          on conflict do nothing
+        `;
+      } catch {
+        // 0006 not applied yet
+      }
     }
     return Number(found.id);
   }
@@ -338,7 +417,19 @@ async function upsertCatalog(
     values (${householdId}, ${name}, ${asStaple ? listId : null}, ${asStaple})
     returning id
   `;
-  return Number(inserted[0]!.id);
+  const id = Number(inserted[0]!.id);
+  if (asStaple) {
+    try {
+      await sql`
+        insert into catalog_item_lists (catalog_item_id, list_id)
+        values (${id}, ${listId})
+        on conflict do nothing
+      `;
+    } catch {
+      // 0006 not applied yet
+    }
+  }
+  return id;
 }
 
 export const addListItem = createServerFn({ method: "POST" })
@@ -471,6 +562,17 @@ export const updateListItem = createServerFn({ method: "POST" })
               default_list_id = case when ${data.isStaple} then coalesce(default_list_id, ${item.list_id}) else default_list_id end
           where id = ${item.catalog_item_id} and household_id = ${membership.id}
         `;
+        if (data.isStaple) {
+          try {
+            await sql`
+              insert into catalog_item_lists (catalog_item_id, list_id)
+              values (${item.catalog_item_id}, ${item.list_id})
+              on conflict do nothing
+            `;
+          } catch {
+            // 0006 not applied yet
+          }
+        }
       }
     }
     await touchHousehold(sql, membership.id);
@@ -543,12 +645,12 @@ export const addUsualsToList = createServerFn({ method: "POST" })
     const membership = await requireMembership(sql, context.userId);
     await assertListInHousehold(sql, data.listId, membership.id);
 
-    const usuals = await sql<{ id: number; name: string }>`
-      select id, name from catalog_items
+    const usuals = await sql<{ id: number; name: string; default_list_id: number | null }>`
+      select id, name, default_list_id from catalog_items
       where household_id = ${membership.id}
         and is_staple = true
-        and (default_list_id = ${data.listId} or default_list_id is null)
     `;
+    const links = await loadUsualListLinks(sql, membership.id);
 
     const existing = await sql<{ name: string }>`
       select lower(name) as name from list_items
@@ -558,6 +660,14 @@ export const addUsualsToList = createServerFn({ method: "POST" })
 
     let added = 0;
     for (const usual of usuals) {
+      const assigned = links.get(Number(usual.id)) ?? [];
+      const listIds = assigned.length
+        ? assigned.map((item) => item.id)
+        : usual.default_list_id == null
+          ? []
+          : [Number(usual.default_list_id)];
+      const fits = listIds.length === 0 || listIds.includes(data.listId);
+      if (!fits) continue;
       if (have.has(usual.name.toLowerCase())) continue;
       await sql`
         insert into list_items (
@@ -619,4 +729,78 @@ export const searchCatalog = createServerFn({ method: "GET" })
       defaultListId: row.default_list_id == null ? null : Number(row.default_list_id),
       isStaple: Boolean(row.is_staple),
     }));
+  });
+
+export const updateUsual = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) =>
+    z
+      .object({
+        id: z.number().int().positive(),
+        name: z.string().trim().min(1).max(80).optional(),
+        listIds: z.array(z.number().int().positive()).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const sql = await getSqlClient();
+    const membership = await requireMembership(sql, context.userId);
+    const rows = await sql<{ id: number; name: string }>`
+      select id, name from catalog_items
+      where id = ${data.id} and household_id = ${membership.id}
+      limit 1
+    `;
+    const usual = rows[0];
+    if (!usual) throw new Error("Usual not found");
+
+    if (data.name && data.name !== usual.name) {
+      const clash = await sql<{ id: number }>`
+        select id from catalog_items
+        where household_id = ${membership.id} and lower(name) = lower(${data.name}) and id <> ${usual.id}
+        limit 1
+      `;
+      if (clash[0]) throw new Error("That name is already in the catalog");
+      await sql`
+        update catalog_items
+        set name = ${data.name}
+        where id = ${usual.id} and household_id = ${membership.id}
+      `;
+      await sql`
+        update list_items
+        set name = ${data.name}
+        where household_id = ${membership.id} and catalog_item_id = ${usual.id}
+      `;
+    }
+
+    if (typeof data.listIds !== "undefined") {
+      await setUsualLists(sql, membership.id, usual.id, data.listIds);
+    }
+
+    await touchHousehold(sql, membership.id);
+    return { ok: true as const };
+  });
+
+export const removeUsual = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => z.object({ id: z.number().int().positive() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const sql = await getSqlClient();
+    const membership = await requireMembership(sql, context.userId);
+    await sql`
+      update catalog_items
+      set is_staple = false
+      where id = ${data.id} and household_id = ${membership.id}
+    `;
+    try {
+      await sql`delete from catalog_item_lists where catalog_item_id = ${data.id}`;
+    } catch {
+      // 0006 not applied yet
+    }
+    await sql`
+      update list_items
+      set is_staple = false
+      where household_id = ${membership.id} and catalog_item_id = ${data.id}
+    `;
+    await touchHousehold(sql, membership.id);
+    return { ok: true as const };
   });

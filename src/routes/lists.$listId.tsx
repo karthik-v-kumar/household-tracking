@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ItemRow } from "@/components/item-row";
 import { LoginPending } from "@/components/login-screen";
+import { EditUsualDialog, ManageUsualsDialog } from "@/components/edit-usual-dialog";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { UsualsTray } from "@/components/usuals-tray";
 import { Button } from "@/components/ui/button";
@@ -31,9 +32,10 @@ import {
   toggleListItem,
   updateListItem,
 } from "@/lib/server/lists";
-import type { ListDetail, ListItem } from "@/lib/types";
+import type { ListDetail, ListItem, Usual } from "@/lib/types";
 import { RedirectToSignIn } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { usualBelongsToList } from "@/lib/usuals";
 import { cn, isUnauthorized } from "@/lib/utils";
 
 export const Route = createFileRoute("/lists/$listId")({ component: ListPage });
@@ -49,18 +51,26 @@ function ListPage() {
 
   return (
     <AuthGate>
-      {() => <ListBody listId={id} />}
+      {(overview) => <ListBody listId={id} lists={overview.lists} />}
     </AuthGate>
   );
 }
 
-function ListBody({ listId }: { listId: number }) {
+function ListBody({
+  listId,
+  lists,
+}: {
+  listId: number;
+  lists: { id: number; name: string }[];
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draggingUsual, setDraggingUsual] = useState(false);
   const [heldInPlace, setHeldInPlace] = useState<number[]>([]);
+  const [manageUsuals, setManageUsuals] = useState(false);
+  const [editingUsual, setEditingUsual] = useState<Usual | null>(null);
   const holdTimers = useRef<Map<number, number>>(new Map());
   const queryKey = ["list", listId] as const;
 
@@ -251,9 +261,9 @@ function ListBody({ listId }: { listId: number }) {
   const openItems = items.filter((item) => item.checked === held.has(item.id));
   const bought = items.filter((item) => item.checked !== held.has(item.id));
   const missingUsuals = usualCatalog.filter(
-    (item) =>
-      !item.alreadyOnList && (item.defaultListId == null || item.defaultListId === listId),
+    (item) => !item.alreadyOnList && usualBelongsToList(item, listId),
   );
+  const trayUsuals = usualCatalog.filter((item) => usualBelongsToList(item, listId));
   const busyShop = clearBought.isPending || nextShop.isPending || usuals.isPending;
 
   return (
@@ -294,6 +304,9 @@ function ListBody({ listId }: { listId: number }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>Edit list</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setManageUsuals(true)}>
+              Edit usuals
+            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={usuals.isPending || missingUsuals.length === 0}
               onSelect={() => usuals.mutate()}
@@ -323,10 +336,12 @@ function ListBody({ listId }: { listId: number }) {
       }
       rail={
         <UsualsTray
-          usuals={usualCatalog}
+          usuals={trayUsuals}
           onAdd={(usual) => add.mutate({ name: usual.name, isStaple: true })}
           onAddRemaining={missingUsuals.length ? () => usuals.mutate() : undefined}
           remainingCount={missingUsuals.length}
+          onEdit={setEditingUsual}
+          onManage={() => setManageUsuals(true)}
           onDraggingChange={setDraggingUsual}
           busy={add.isPending || usuals.isPending}
           compact
@@ -347,7 +362,9 @@ function ListBody({ listId }: { listId: number }) {
             title="Nothing here yet"
             body={
               usualCatalog.length
-                ? "Tap a usual up top, or add this list's usuals. Leftovers can stay — you don't have to finish the list first."
+                ? missingUsuals.length
+                  ? "Tap a usual up top, or add this list's usuals. Leftovers can stay — you don't have to finish the list first."
+                  : "Add this week's items. Usuals for other stores stay in their own trays."
                 : "Add this week's items. Star anything you buy often — it lands in the tray next time."
             }
             action={
@@ -430,6 +447,22 @@ function ListBody({ listId }: { listId: number }) {
       </div>
 
       <NewListDialog open={editOpen} onOpenChange={setEditOpen} list={list} />
+      <ManageUsualsDialog
+        open={manageUsuals}
+        onOpenChange={setManageUsuals}
+        usuals={usualCatalog}
+        lists={lists}
+        onSaved={invalidate}
+      />
+      <EditUsualDialog
+        open={Boolean(editingUsual)}
+        onOpenChange={(next) => {
+          if (!next) setEditingUsual(null);
+        }}
+        usual={editingUsual}
+        lists={lists}
+        onSaved={invalidate}
+      />
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

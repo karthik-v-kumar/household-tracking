@@ -92,6 +92,8 @@ export type Usual = {
   name: string;
   defaultListId: number | null;
   defaultListName: string | null;
+  listIds: number[];
+  listNames: string[];
   alreadyOnList: boolean;
 };
 
