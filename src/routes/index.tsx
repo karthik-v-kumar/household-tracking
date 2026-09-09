@@ -11,16 +11,15 @@ import { ListCard, NewListCard } from "@/components/list-card";
 import { LoginPending } from "@/components/login-screen";
 import { LandingPage } from "@/components/landing-page";
 import { ShareInviteBanner } from "@/components/share-invite";
-import { UsualsTray } from "@/components/usuals-tray";
 import { NewListDialog } from "@/components/new-list-dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { addLowInventoryToLists } from "@/lib/server/inventory";
-import { addListItem, deleteList } from "@/lib/server/lists";
+import { deleteList } from "@/lib/server/lists";
 import { addNeededUpkeepToLists } from "@/lib/server/upkeep";
 import { formatUpkeepDue } from "@/lib/upkeep-logic";
 import { INVENTORY_LEVELS } from "@/lib/constants";
-import type { ShoppingList, Usual } from "@/lib/types";
+import type { ShoppingList } from "@/lib/types";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -45,8 +44,8 @@ function HomeContent({
   const [deleting, setDeleting] = useState<ShoppingList | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const low = overview.lowInventory;
-  const due = overview.dueUpkeep ?? [];
+  const low = overview.lowInventory.filter((item) => !item.onAList);
+  const due = (overview.dueUpkeep ?? []).filter((item) => !item.onAList);
   const addLow = useMutation({
     mutationFn: (itemIds?: number[]) => addLowInventoryToLists({ data: { itemIds } }),
     onSuccess: async (result) => {
@@ -78,43 +77,8 @@ function HomeContent({
     },
     onError: (err: Error) => toast.error(err.message),
   });
-  const addUsual = useMutation({
-    mutationFn: (usual: Usual) => {
-      const listId = usual.defaultListId ?? overview.lists[0]?.id;
-      if (!listId) throw new Error("Create a list first.");
-      return addListItem({ data: { listId, name: usual.name, isStaple: true } });
-    },
-    onSuccess: async (result, usual) => {
-      const listName =
-        usual.defaultListName ?? overview.lists.find((list) => list.id === usual.defaultListId)?.name ?? overview.lists[0]?.name;
-      if (result.already) toast.message(`Already on ${listName ?? "the list"}`);
-      else toast.success(`Added to ${listName ?? "the list"}`);
-      await queryClient.invalidateQueries({ queryKey: ["overview"] });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-  const addAllUsuals = useMutation({
-    mutationFn: async () => {
-      const fallback = overview.lists[0]?.id;
-      if (!fallback) throw new Error("Create a list first.");
-      let added = 0;
-      for (const usual of overview.usuals) {
-        if (usual.alreadyOnList) continue;
-        const listId = usual.defaultListId ?? fallback;
-        const result = await addListItem({ data: { listId, name: usual.name, isStaple: true } });
-        if (!result.already) added += 1;
-      }
-      return { added };
-    },
-    onSuccess: async (result) => {
-      toast.success(result.added ? `Added ${result.added} usual${result.added === 1 ? "" : "s"}` : "Usuals already on lists");
-      await queryClient.invalidateQueries({ queryKey: ["overview"] });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
 
   const remaining = overview.lists.reduce((sum, list) => sum + list.uncheckedCount, 0);
-  const missingUsuals = (overview.usuals ?? []).filter((item) => !item.alreadyOnList);
 
   return (
     <AppShell
@@ -130,24 +94,13 @@ function HomeContent({
           <Plus className="size-4" />
         </Button>
       }
-      rail={
-        <UsualsTray
-          usuals={overview.usuals ?? []}
-          onAdd={(usual) => addUsual.mutate(usual)}
-          onAddRemaining={missingUsuals.length && overview.lists.length ? () => addAllUsuals.mutate() : undefined}
-          remainingCount={missingUsuals.length}
-          busy={addUsual.isPending || addAllUsuals.isPending}
-          compact
-          hint="Add whenever — leftover items can sit on a list until you're ready."
-        />
-      }
     >
       <ShareInviteBanner overview={overview} />
       {low.length > 0 ? (
         <section className="panel mb-4 px-4 py-3">
-          <h2 className="font-display text-base font-medium tracking-tight">Running low</h2>
-          <p className="mt-0.5 text-xs text-muted">Add only what you actually want this week.</p>
-          <ul className="mt-2 divide-y divide-border">
+          <h2 className="text-base font-extrabold tracking-tight">Running low</h2>
+          <p className="mt-0.5 text-xs text-muted">Add only what you actually want this week. Once it is on a list, it leaves this board.</p>
+          <ul className="mt-2 divide-y-2 divide-fg/15">
             {low.map((item) => {
               const level = INVENTORY_LEVELS.find((row) => row.id === item.effectiveLevel)?.label ?? item.effectiveLevel;
               return (
@@ -155,7 +108,6 @@ function HomeContent({
                   <NeedRow
                     name={item.name}
                     detail={[level, item.defaultListName].filter(Boolean).join(" · ")}
-                    onAList={item.onAList}
                     busy={addLow.isPending && addLow.variables?.[0] === item.id}
                     onAdd={() => addLow.mutate([item.id])}
                   />
@@ -168,15 +120,14 @@ function HomeContent({
 
       {due.length > 0 ? (
         <section className="panel mb-4 px-4 py-3">
-          <h2 className="font-display text-base font-medium tracking-tight">Filters</h2>
+          <h2 className="text-base font-extrabold tracking-tight">Filters</h2>
           <p className="mt-0.5 text-xs text-muted">Add the ones you want to pick up now.</p>
-          <ul className="mt-2 divide-y divide-border">
+          <ul className="mt-2 divide-y-2 divide-fg/15">
             {due.map((item) => (
               <li key={item.id}>
                 <NeedRow
                   name={item.name}
                   detail={[formatUpkeepDue(item.daysUntil), item.defaultListName].filter(Boolean).join(" · ")}
-                  onAList={item.onAList}
                   canAdd={item.needToBuy}
                   busy={addFilters.isPending && addFilters.variables?.[0] === item.id}
                   onAdd={() => addFilters.mutate([item.id])}
@@ -268,14 +219,12 @@ function HomeContent({
 function NeedRow({
   name,
   detail,
-  onAList,
   canAdd = true,
   busy,
   onAdd,
 }: {
   name: string;
   detail?: string;
-  onAList: boolean;
   canAdd?: boolean;
   busy?: boolean;
   onAdd: () => void;
@@ -283,12 +232,10 @@ function NeedRow({
   return (
     <div className="flex min-h-12 items-center gap-3 py-1">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{name}</p>
+        <p className="truncate font-semibold tracking-tight">{name}</p>
         {detail ? <p className="truncate text-xs text-muted">{detail}</p> : null}
       </div>
-      {onAList ? (
-        <span className="shrink-0 text-xs text-muted">On a list</span>
-      ) : canAdd ? (
+      {canAdd ? (
         <Button size="sm" variant="secondary" disabled={busy} onClick={onAdd}>
           Add
         </Button>
