@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Package, Plus } from "lucide-react";
@@ -60,7 +60,18 @@ function InventoryBody() {
   });
 
   const items = inventory.data ?? [];
-  const low = items.filter((item) => item.effectiveLevel === "low" || item.effectiveLevel === "out");
+  const pinnedIds = useRef<number[]>([]);
+  if (items.length) {
+    const ids = items.map((item) => item.id);
+    const keep = pinnedIds.current.filter((id) => ids.includes(id));
+    const added = ids.filter((id) => !keep.includes(id));
+    pinnedIds.current = keep.length === 0 ? ids : [...keep, ...added];
+  }
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const orderedItems = pinnedIds.current
+    .map((id) => byId.get(id))
+    .filter((item): item is InventoryItem => Boolean(item));
+  const low = orderedItems.filter((item) => item.effectiveLevel === "low" || item.effectiveLevel === "out");
   const dueFilters = (upkeep.data ?? []).filter((item) => item.status !== "ok").length;
 
   const invalidate = async () => {
@@ -82,7 +93,22 @@ function InventoryBody() {
   const setLevel = useMutation({
     mutationFn: (input: { itemId: number; level: InventoryLevel }) =>
       updateInventoryItem({ data: input }),
-    onSuccess: invalidate,
+    onMutate: async ({ itemId, level }) => {
+      await queryClient.cancelQueries({ queryKey: ["inventory"] });
+      const previous = queryClient.getQueryData<InventoryItem[]>(["inventory"]);
+      queryClient.setQueryData<InventoryItem[]>(["inventory"], (current) =>
+        (current ?? []).map((item) =>
+          item.id === itemId ? { ...item, level, effectiveLevel: level } : item,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["inventory"], ctx.previous);
+    },
+    onSettled: () => {
+      void invalidate();
+    },
   });
 
   const remove = useMutation({
@@ -143,7 +169,7 @@ function InventoryBody() {
             </div>
           ) : null}
 
-          {items.length === 0 ? (
+          {orderedItems.length === 0 ? (
             <EmptyState
               icon={Package}
               image="/images/paper.jpg"
@@ -159,7 +185,7 @@ function InventoryBody() {
             />
           ) : (
             <div className="grid gap-2.5">
-              {items.map((item) => (
+              {orderedItems.map((item) => (
                 <InventoryCard
                   key={item.id}
                   item={item}
