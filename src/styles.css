@@ -199,6 +199,25 @@
     box-shadow: inset 0 0 0 1.5px var(--color-fg);
   }
 
+  .item-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 1.375rem;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    background: #c45c26;
+    color: #fff6ec;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .item-badge.is-qty {
+    background: var(--color-bg-elevated);
+    color: var(--color-muted);
+  }
+
   .swipe-row {
     position: relative;
     overflow: hidden;

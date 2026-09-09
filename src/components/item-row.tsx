@@ -64,13 +64,12 @@ export function ItemRow({
   }
 
   const swiping = Math.abs(dx) > 8;
-  const source =
-    item.notes === "From inventory"
-      ? "Inventory"
-      : item.notes === "From filters"
-        ? "Filter"
-        : item.notes;
-  const extraNote = source && source !== "Inventory" && source !== "Filter" ? source : null;
+  const note = item.notes?.trim() ?? "";
+  const source = /inventory/i.test(note)
+    ? "From inventory"
+    : /filter/i.test(note)
+      ? "From filters"
+      : note || null;
 
   return (
     <div ref={rowRef} className="swipe-row border-b border-hairline last:border-0">
@@ -162,20 +161,8 @@ export function ItemRow({
             swiping && "pointer-events-none opacity-0",
           )}
         >
-          {item.quantity ? (
-            <span className="rounded-full bg-fg/6 px-2 py-0.5 text-[0.65rem] font-semibold text-muted">
-              {item.quantity}
-            </span>
-          ) : null}
-          {source === "Inventory" || source === "Filter" ? (
-            <span className="rounded-full bg-warn/12 px-2 py-0.5 text-[0.65rem] font-semibold text-warn">
-              {source === "Inventory" ? "From inventory" : "From filters"}
-            </span>
-          ) : extraNote ? (
-            <span className="max-w-24 truncate rounded-full bg-fg/6 px-2 py-0.5 text-[0.65rem] font-semibold text-muted">
-              {extraNote}
-            </span>
-          ) : null}
+          {item.quantity ? <span className="item-badge is-qty">{item.quantity}</span> : null}
+          {source ? <span className="item-badge">{source}</span> : null}
           {item.isStaple ? (
             <Star className="size-3.5 shrink-0 fill-fg text-fg" />
           ) : null}
