@@ -38,12 +38,12 @@ export function AppShell({
     <div className="mx-auto flex h-dvh w-full max-w-xl flex-col overflow-hidden bg-bg overscroll-y-none">
       <a
         href="#main-content"
-        className="sr-only rounded-md bg-surface px-4 py-2 text-fg focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
+        className="sr-only bg-surface px-4 py-2 text-fg focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
       >
         Skip to content
       </a>
 
-      <header className="edge-top shrink-0 border-b border-border/80 bg-bg px-5 pb-3">
+      <header className="edge-top shrink-0 border-b-2 border-fg bg-bg px-5 pb-3">
         <div className="flex items-center justify-between gap-3">
           <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
             {APP_NAME}
@@ -51,7 +51,7 @@ export function AppShell({
           <div className="flex shrink-0 items-center gap-1">
             {actions}
             {isPending ? (
-              <div className="size-9 animate-pulse rounded-full bg-fg/8" />
+              <div className="size-9 animate-pulse bg-fg/8" />
             ) : (
               <SettingsMenu />
             )}
@@ -61,27 +61,25 @@ export function AppShell({
       </header>
 
       {rail ? (
-        <div className="shrink-0 border-b border-border/80 bg-bg px-5 py-3">{rail}</div>
+        <div className="shrink-0 border-b-2 border-fg bg-bg px-5 py-3">{rail}</div>
       ) : null}
 
       <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-6">
-        {eyebrow ? (
-          <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">
-            {eyebrow}
-          </p>
-        ) : null}
+        {eyebrow ? <p className="kicker">{eyebrow}</p> : null}
         {title ? (
-          <h1 className="mt-1 font-display text-4xl leading-[1.05] tracking-tight">{title}</h1>
+          <h1 className="mt-1 font-display text-[2.35rem] leading-[0.95] font-extrabold tracking-tight sm:text-5xl">
+            {title}
+          </h1>
         ) : null}
         {stat ? <p className="mt-2 text-sm text-muted">{stat}</p> : null}
         <div className={title || eyebrow || stat ? "mt-6" : undefined}>{children}</div>
       </main>
 
       <footer
-        className="shrink-0 border-t border-border bg-surface"
+        className="shrink-0 border-t-2 border-fg bg-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {dock ? <div className="space-y-2 px-4 pt-3 pb-2">{dock}</div> : null}
+        {dock ? <div className="space-y-2 border-b-2 border-fg px-4 pt-3 pb-2">{dock}</div> : null}
         <nav aria-label="Main">
           <div className="grid grid-cols-3">
             {NAV.map((item) => {
@@ -95,11 +93,11 @@ export function AppShell({
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 text-xs tracking-wide",
+                    "flex min-h-14 flex-col items-center justify-center gap-1 text-[0.68rem] font-bold tracking-[0.14em] uppercase",
                     active ? "text-fg" : "text-muted",
                   )}
                 >
-                  <Icon className="size-5" strokeWidth={active ? 2.1 : 1.6} />
+                  <Icon className="size-5" strokeWidth={active ? 2.4 : 1.7} />
                   {item.label}
                 </Link>
               );
