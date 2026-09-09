@@ -84,9 +84,54 @@ export function FiltersPanel({
   });
 
   const remove = useMutation({
-    mutationFn: (itemId: number) => deleteUpkeepItem({ data: { itemId } }),
-    onSuccess: invalidate,
+    mutationFn: async (item: UpkeepItem) => {
+      await deleteUpkeepItem({ data: { itemId: item.id } });
+      return item;
+    },
+    onMutate: async (item) => {
+      await queryClient.cancelQueries({ queryKey: ["upkeep"] });
+      const previous = queryClient.getQueryData<UpkeepItem[]>(["upkeep"]);
+      queryClient.setQueryData<UpkeepItem[]>(["upkeep"], (current) =>
+        (current ?? []).filter((row) => row.id !== item.id),
+      );
+      return { previous };
+    },
+    onError: (err: Error, _item, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["upkeep"], ctx.previous);
+      toast.error(err.message);
+    },
+    onSuccess: (item) => {
+      toast(`${item.name} removed`, {
+        duration: 10_000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void restoreFilter(item);
+          },
+        },
+      });
+    },
   });
+
+  async function restoreFilter(item: UpkeepItem) {
+    try {
+      await addUpkeepItem({
+        data: {
+          name: item.name,
+          intervalDays: item.intervalDays,
+          qtyNeeded: item.qtyNeeded,
+          spareCount: item.spareCount,
+          lastReplacedAt: item.lastReplacedAt,
+          stockLeadDays: item.stockLeadDays,
+          defaultListId: item.defaultListId,
+        },
+      });
+      await invalidate();
+      toast.success(`${item.name} restored`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not undo");
+    }
+  }
 
   const dialogOpen = addOpen || Boolean(editing);
 
@@ -129,7 +174,7 @@ export function FiltersPanel({
               onReplaced={() => replaced.mutate(item.id)}
               onAdd={() => addNeeded.mutate([item.id])}
               onEdit={() => setEditing(item)}
-              onDelete={() => remove.mutate(item.id)}
+              onDelete={() => remove.mutate(item)}
             />
           ))}
         </div>

@@ -118,9 +118,11 @@ export const addUpkeepItem = createServerFn({ method: "POST" })
     if (existing[0]) throw new Error("That filter is already tracked.");
 
     const last =
-      data.lastReplacedAt && data.lastReplacedAt.length > 0
-        ? data.lastReplacedAt
-        : new Date().toISOString();
+      data.lastReplacedAt === undefined
+        ? new Date().toISOString()
+        : data.lastReplacedAt && data.lastReplacedAt.length > 0
+          ? data.lastReplacedAt
+          : null;
 
     const rows = await sql<{ id: number }>`
       insert into upkeep_items (

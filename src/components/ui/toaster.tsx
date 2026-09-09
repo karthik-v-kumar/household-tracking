@@ -8,6 +8,9 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast: "overlay-surface bg-surface text-fg border-border",
+          actionButton:
+            "!rounded-full !bg-primary !text-primary-fg !px-3 !py-1 !text-sm !font-semibold",
+          cancelButton: "!text-muted",
         },
       }}
     />

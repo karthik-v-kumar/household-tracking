@@ -112,9 +112,58 @@ function InventoryBody() {
   });
 
   const remove = useMutation({
-    mutationFn: (itemId: number) => deleteInventoryItem({ data: { itemId } }),
-    onSuccess: invalidate,
+    mutationFn: async (item: InventoryItem) => {
+      await deleteInventoryItem({ data: { itemId: item.id } });
+      return item;
+    },
+    onMutate: async (item) => {
+      await queryClient.cancelQueries({ queryKey: ["inventory"] });
+      const previous = queryClient.getQueryData<InventoryItem[]>(["inventory"]);
+      const index = previous?.findIndex((row) => row.id === item.id) ?? pinnedIds.current.indexOf(item.id);
+      queryClient.setQueryData<InventoryItem[]>(["inventory"], (current) =>
+        (current ?? []).filter((row) => row.id !== item.id),
+      );
+      return { previous, index };
+    },
+    onError: (err: Error, _item, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["inventory"], ctx.previous);
+      toast.error(err.message);
+    },
+    onSuccess: (item, _vars, ctx) => {
+      toast(`${item.name} removed`, {
+        duration: 10_000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void restoreInventory(item, ctx?.index ?? 0);
+          },
+        },
+      });
+    },
   });
+
+  async function restoreInventory(item: InventoryItem, index: number) {
+    try {
+      const result = await addInventoryItem({
+        data: {
+          name: item.name,
+          category: item.category,
+          level: item.level,
+          typicalDays: item.typicalDays,
+          defaultListId: item.defaultListId,
+          lastRestockedAt: item.lastRestockedAt,
+          notes: item.notes,
+        },
+      });
+      const pin = pinnedIds.current.filter((id) => id !== item.id);
+      const at = Math.max(0, Math.min(index, pin.length));
+      pinnedIds.current = [...pin.slice(0, at), result.id, ...pin.slice(at)];
+      await invalidate();
+      toast.success(`${item.name} restored`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not undo");
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -195,7 +244,7 @@ function InventoryBody() {
                     setEditing(item);
                     setOpen(true);
                   }}
-                  onDelete={() => remove.mutate(item.id)}
+                  onDelete={() => remove.mutate(item)}
                 />
               ))}
             </div>

@@ -83,10 +83,12 @@ export const addInventoryItem = createServerFn({ method: "POST" })
 
     const level = asLevel(data.level ?? "ok");
     const restocked =
-      data.lastRestockedAt && data.lastRestockedAt.length > 0
-        ? data.lastRestockedAt
-        : level === "full" || level === "ok"
+      data.lastRestockedAt === undefined
+        ? level === "full" || level === "ok"
           ? new Date().toISOString()
+          : null
+        : data.lastRestockedAt && data.lastRestockedAt.length > 0
+          ? data.lastRestockedAt
           : null;
     const rows = await sql<{ id: number }>`
       insert into inventory_items (
