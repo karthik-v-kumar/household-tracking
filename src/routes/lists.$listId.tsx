@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, MoreHorizontal, ShoppingCart } from "lucide-react";
@@ -60,6 +60,8 @@ function ListBody({ listId }: { listId: number }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draggingUsual, setDraggingUsual] = useState(false);
+  const [heldInPlace, setHeldInPlace] = useState<number[]>([]);
+  const holdTimers = useRef<Map<number, number>>(new Map());
   const queryKey = ["list", listId] as const;
 
   const detail = useQuery({
@@ -154,6 +156,26 @@ function ListBody({ listId }: { listId: number }) {
     onSettled: () => void invalidate(),
   });
 
+  useEffect(() => {
+    const timers = holdTimers.current;
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      timers.clear();
+    };
+  }, []);
+
+  function requestToggle(item: ListItem) {
+    toggle.mutate({ itemId: item.id, checked: !item.checked });
+    setHeldInPlace((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]));
+    const existing = holdTimers.current.get(item.id);
+    if (existing) window.clearTimeout(existing);
+    const timer = window.setTimeout(() => {
+      setHeldInPlace((prev) => prev.filter((id) => id !== item.id));
+      holdTimers.current.delete(item.id);
+    }, 450);
+    holdTimers.current.set(item.id, timer);
+  }
+
   const staple = useMutation({
     mutationFn: (item: ListItem) =>
       updateListItem({ data: { itemId: item.id, isStaple: !item.isStaple } }),
@@ -225,8 +247,9 @@ function ListBody({ listId }: { listId: number }) {
   const { list, items, usuals: usualCatalog } = detail.data;
   const Icon = listIcon(list.icon);
   const color = listColor(list.color);
-  const openItems = items.filter((item) => !item.checked);
-  const bought = items.filter((item) => item.checked);
+  const held = new Set(heldInPlace);
+  const openItems = items.filter((item) => item.checked === held.has(item.id));
+  const bought = items.filter((item) => item.checked !== held.has(item.id));
   const missingUsuals = usualCatalog.filter(
     (item) =>
       !item.alreadyOnList && (item.defaultListId == null || item.defaultListId === listId),
@@ -337,18 +360,18 @@ function ListBody({ listId }: { listId: number }) {
           />
         ) : (
           <>
-            <div className="panel overflow-hidden px-3 py-1">
+            <div className="panel overflow-hidden">
               {openItems.map((item) => (
                 <ItemRow
                   key={item.id}
                   item={item}
-                  onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                  onToggle={() => requestToggle(item)}
                   onStaple={() => staple.mutate(item)}
                   onDelete={() => remove.mutate(item.id)}
                 />
               ))}
               {openItems.length === 0 ? (
-                <div className="grid gap-3 px-2 py-6 text-center">
+                <div className="grid gap-3 px-5 py-6 text-center">
                   <p className="text-sm text-muted">Cart is clear. Nice.</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {bought.length > 0 ? (
@@ -389,12 +412,12 @@ function ListBody({ listId }: { listId: number }) {
                     Clear
                   </Button>
                 </div>
-                <div className="panel mt-2 overflow-hidden px-3 py-1">
+                <div className="panel mt-2 overflow-hidden">
                   {bought.map((item) => (
                     <ItemRow
                       key={item.id}
                       item={item}
-                      onToggle={() => toggle.mutate({ itemId: item.id, checked: !item.checked })}
+                      onToggle={() => requestToggle(item)}
                       onStaple={() => staple.mutate(item)}
                       onDelete={() => remove.mutate(item.id)}
                     />

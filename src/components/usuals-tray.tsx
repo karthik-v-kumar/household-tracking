@@ -43,11 +43,7 @@ export function UsualsTray({
   compact?: boolean;
   hint?: string;
 }) {
-  const ordered = [
-    ...usuals.filter((item) => !item.alreadyOnList),
-    ...usuals.filter((item) => item.alreadyOnList),
-  ];
-  const missing = ordered.filter((item) => !item.alreadyOnList);
+  const missing = usuals.filter((item) => !item.alreadyOnList);
   const addCount = remainingCount ?? missing.length;
   const [drag, setDrag] = useState<DragState | null>(null);
 
@@ -72,7 +68,7 @@ export function UsualsTray({
           </button>
         ) : null}
       </div>
-      {usuals.length === 0 ? (
+      {missing.length === 0 ? (
         <p className="mt-2 text-sm text-muted">
           {hint ?? "Star an item while you shop. It stays here so you can drop it on a list any week."}
         </p>
@@ -83,7 +79,7 @@ export function UsualsTray({
             className={cn("chip-tray mt-2", compact && "max-h-[6.25rem]")}
             aria-label="Usuals tray"
           >
-            {ordered.map((item) => (
+            {missing.map((item) => (
               <UsualChipButton
                 key={item.id}
                 item={item}
