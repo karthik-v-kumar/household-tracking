@@ -74,3 +74,115 @@ async function loadLists(sql: Sql, householdId: number): Promise<ShoppingList[]>
   `;
   return rows.map(mapShoppingList);
 }
+
+async function loadMembers(
+  sql: Sql,
+  householdId: number,
+  userId: string,
+): Promise<HouseholdMember[]> {
+  const rows = await sql<{
+    user_id: string;
+    role: string;
+    display_name: string | null;
+    joined_at: string | Date;
+    name: string | null;
+    image: string | null;
+  }>`
+    select m.user_id, m.role, m.display_name, m.joined_at, u.name, u.image
+    from household_members m
+    left join "user" u on u.id = m.user_id
+    where m.household_id = ${householdId}
+    order by m.joined_at asc
+  `;
+  return rows.map((row) => ({
+    userId: row.user_id,
+    role: row.role === "owner" ? "owner" : "member",
+    displayName: row.display_name || row.name || "Household member",
+    imageUrl: row.image,
+    joinedAt: toIso(row.joined_at) ?? new Date().toISOString(),
+    isYou: row.user_id === userId,
+  }));
+}
+
+async function loadUsuals(
+  sql: Sql,
+  householdId: number,
+  onList: Set<string>,
+): Promise<Usual[]> {
+  const rows = await sql<{
+    id: number;
+    name: string;
+    default_list_id: number | null;
+    default_list_name: string | null;
+  }>`
+    select c.id, c.name, c.default_list_id, l.name as default_list_name
+    from catalog_items c
+    left join lists l on l.id = c.default_list_id
+    where c.household_id = ${householdId} and c.is_staple = true
+    order by c.name asc
+  `;
+  return rows.map((row) => ({
+    id: Number(row.id),
+    name: row.name,
+    defaultListId: row.default_list_id == null ? null : Number(row.default_list_id),
+    defaultListName: row.default_list_name,
+    alreadyOnList: onList.has(row.name.toLowerCase()),
+  }));
+}
+
+export async function getOverviewData(
+  sql: Sql,
+  userId: string,
+  membership: MembershipRow,
+): Promise<Overview> {
+  const [lists, members, inventoryRows, onListRows] = await Promise.all([
+    loadLists(sql, membership.id),
+    loadMembers(sql, membership.id, userId),
+    sql<InventoryRow>`
+      select inv.*, l.name as default_list_name
+      from inventory_items inv
+      left join lists l on l.id = inv.default_list_id
+      where inv.household_id = ${membership.id}
+    `,
+    sql<{ name: string }>`
+      select distinct lower(name) as name
+      from list_items
+      where household_id = ${membership.id} and checked = false
+    `,
+  ]);
+
+  let upkeepRows: UpkeepRow[] = [];
+  try {
+    upkeepRows = await sql<UpkeepRow>`
+      select u.id, u.name, u.interval_days, u.last_replaced_at, u.spare_count,
+             u.qty_needed, u.stock_lead_days, u.default_list_id, u.notes,
+             l.name as default_list_name
+      from upkeep_items u
+      left join lists l on l.id = u.default_list_id
+      where u.household_id = ${membership.id}
+    `;
+  } catch {
+    upkeepRows = [];
+  }
+
+  const onList = new Set(onListRows.map((r) => r.name));
+  const lowInventory = inventoryRows
+    .map((row) => mapInventoryRow(row, onList.has(row.name.toLowerCase())))
+    .filter((item) => (item.effectiveLevel === "low" || item.effectiveLevel === "out") && !item.onAList)
+    .sort((a, b) => levelRank(a.effectiveLevel) - levelRank(b.effectiveLevel) || a.name.localeCompare(b.name));
+
+  const dueUpkeep = upkeepRows
+    .map((row) => mapUpkeepRow(row, onList.has(row.name.toLowerCase())))
+    .filter((item) => item.status !== "ok")
+    .sort((a, b) => upkeepRank(a.status) - upkeepRank(b.status) || a.name.localeCompare(b.name));
+
+  const household: Household = {
+    id: Number(membership.id),
+    name: membership.name,
+    inviteCode: membership.invite_code,
+    role: membership.role === "owner" ? "owner" : "member",
+    createdAt: toIso(membership.created_at) ?? new Date().toISOString(),
+  };
+
+  return { household, members, lists, lowInventory, dueUpkeep, usuals: await loadUsuals(sql, membership.id, onList) };
+}
