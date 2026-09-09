@@ -3,7 +3,6 @@ import { Plus, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { searchCatalog } from "@/lib/server/lists";
 import type { CatalogItem } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -64,12 +63,12 @@ export function AddItemBar({
         submit();
       }}
     >
-      <div className="flex items-center gap-1 rounded-xl border border-border bg-bg p-1">
+      <div className="flex items-center gap-1 rounded-full border border-border bg-bg py-1 pr-1 pl-2">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Add milk, limes…"
-          className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0"
           autoComplete="off"
           enterKeyHint="done"
         />
@@ -77,7 +76,7 @@ export function AddItemBar({
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="Qty"
-          className="h-11 w-14 shrink-0 border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0"
+          className="h-12 w-14 shrink-0 border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0"
           autoComplete="off"
         />
         <button
@@ -86,15 +85,20 @@ export function AddItemBar({
           aria-label="Remember as usual"
           onClick={() => setStaple((v) => !v)}
           className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-full",
+            "grid size-12 shrink-0 place-items-center rounded-full",
             staple ? "text-fg" : "text-subtle hover:text-fg",
           )}
         >
-          <Star className={cn("size-4", staple && "fill-fg")} />
+          <Star className={cn("size-5", staple && "fill-fg")} />
         </button>
-        <Button type="submit" size="icon" disabled={busy || !trimmed} aria-label="Add item">
-          <Plus className="size-4" />
-        </Button>
+        <button
+          type="submit"
+          disabled={busy || !trimmed}
+          aria-label="Add item"
+          className="grid size-12 shrink-0 place-items-center rounded-full bg-fg text-primary-fg disabled:opacity-35"
+        >
+          <Plus className="size-6" strokeWidth={2.5} />
+        </button>
       </div>
       {open ? (
         <ul className="panel absolute inset-x-0 bottom-full z-20 mb-2 overflow-hidden py-1">
