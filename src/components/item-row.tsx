@@ -53,7 +53,7 @@ export function ItemRow({
   }
 
   return (
-    <div className="swipe-row border-b-2 border-fg last:border-0">
+    <div className="swipe-row border-b border-hairline last:border-0">
       <div
         className={cn("swipe-row-action", item.checked ? "is-undo" : "is-buy")}
         aria-hidden="true"
@@ -106,14 +106,18 @@ export function ItemRow({
           onClick={onToggle}
           aria-pressed={item.checked}
           aria-label={item.checked ? `Uncheck ${item.name}` : `Check ${item.name}`}
-          className={cn(
-            "grid size-11 shrink-0 place-items-center border-2 transition-colors duration-200",
-            item.checked
-              ? "border-fg bg-fg text-primary-fg"
-              : "border-fg/30 bg-transparent text-transparent",
-          )}
+          className="grid size-11 shrink-0 place-items-center"
         >
-          <Check className="size-4" strokeWidth={2.8} />
+          <span
+            className={cn(
+              "grid size-5 place-items-center rounded-full border transition-colors duration-200",
+              item.checked
+                ? "border-fg bg-fg text-primary-fg"
+                : "border-fg/25 bg-transparent text-transparent",
+            )}
+          >
+            <Check className="size-3" strokeWidth={3} />
+          </span>
         </button>
         <button type="button" onClick={onToggle} className="min-w-0 flex-1 py-2 text-left">
           <p className={cn("truncate text-[0.98rem] font-semibold tracking-tight", item.checked && "text-muted line-through")}>

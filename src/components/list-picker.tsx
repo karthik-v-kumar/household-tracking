@@ -23,7 +23,7 @@ export function ListPicker({
           type="button"
           onClick={() => onChange("")}
           className={cn(
-            "min-h-11 rounded-full border px-3 py-2 text-sm",
+            "h-9 rounded-full border px-3 text-sm",
             value === ""
               ? "border-fg bg-primary text-primary-fg"
               : "border-border bg-bg-elevated text-fg",
@@ -39,7 +39,7 @@ export function ListPicker({
               type="button"
               onClick={() => onChange(list.id)}
               className={cn(
-                "min-h-11 rounded-full border px-3 py-2 text-sm",
+                "h-9 rounded-full border px-3 text-sm",
                 selected
                   ? "border-fg bg-primary text-primary-fg"
                   : "border-border bg-bg-elevated text-fg",
@@ -52,7 +52,7 @@ export function ListPicker({
         <button
           type="button"
           onClick={() => setNewOpen(true)}
-          className="min-h-11 rounded-full border border-dashed border-fg/30 px-3 py-2 text-sm text-muted"
+          className="h-9 rounded-full border border-dashed border-border px-3 text-sm text-muted"
         >
           New list
         </button>

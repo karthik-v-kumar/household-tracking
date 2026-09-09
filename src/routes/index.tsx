@@ -100,7 +100,7 @@ function HomeContent({
         <section className="panel mb-4 px-4 py-3">
           <h2 className="text-base font-extrabold tracking-tight">Running low</h2>
           <p className="mt-0.5 text-xs text-muted">Add only what you actually want this week. Once it is on a list, it leaves this board.</p>
-          <ul className="mt-2 divide-y-2 divide-fg/15">
+          <ul className="mt-2 divide-y divide-hairline">
             {low.map((item) => {
               const level = INVENTORY_LEVELS.find((row) => row.id === item.effectiveLevel)?.label ?? item.effectiveLevel;
               return (
@@ -122,7 +122,7 @@ function HomeContent({
         <section className="panel mb-4 px-4 py-3">
           <h2 className="text-base font-extrabold tracking-tight">Filters</h2>
           <p className="mt-0.5 text-xs text-muted">Add the ones you want to pick up now.</p>
-          <ul className="mt-2 divide-y-2 divide-fg/15">
+          <ul className="mt-2 divide-y divide-hairline">
             {due.map((item) => (
               <li key={item.id}>
                 <NeedRow

@@ -43,7 +43,7 @@ export function AppShell({
         Skip to content
       </a>
 
-      <header className="edge-top shrink-0 border-b-2 border-fg bg-bg px-5 pb-3">
+      <header className="edge-top shrink-0 border-b border-hairline bg-bg px-5 pb-3">
         <div className="flex items-center justify-between gap-3">
           <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
             {APP_NAME}
@@ -61,7 +61,7 @@ export function AppShell({
       </header>
 
       {rail ? (
-        <div className="shrink-0 border-b-2 border-fg bg-bg px-5 py-3">{rail}</div>
+        <div className="shrink-0 border-b border-hairline bg-bg px-5 py-3">{rail}</div>
       ) : null}
 
       <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-6">
@@ -76,10 +76,10 @@ export function AppShell({
       </main>
 
       <footer
-        className="shrink-0 border-t-2 border-fg bg-surface"
+        className="shrink-0 border-t border-hairline bg-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {dock ? <div className="space-y-2 border-b-2 border-fg px-4 pt-3 pb-2">{dock}</div> : null}
+        {dock ? <div className="space-y-2 border-b border-hairline px-4 pt-3 pb-2">{dock}</div> : null}
         <nav aria-label="Main">
           <div className="grid grid-cols-3">
             {NAV.map((item) => {

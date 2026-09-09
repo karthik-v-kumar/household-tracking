@@ -30,7 +30,7 @@ export function ListCard({
         className="flex min-w-0 flex-1 items-center gap-4 p-4 transition-[background-color] duration-200 hover:bg-bg-elevated"
       >
         <div
-          className={`grid size-11 place-items-center text-primary-fg ${LIST_COLOR_CLASS[color]}`}
+          className={`grid size-10 place-items-center rounded-xl text-primary-fg ${LIST_COLOR_CLASS[color]}`}
         >
           <Icon className="size-5" strokeWidth={2} />
         </div>
@@ -70,9 +70,9 @@ export function NewListCard({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-4 border-2 border-dashed border-fg/35 bg-transparent p-4 text-left transition-[background-color] duration-200 hover:bg-bg-elevated"
+      className="flex w-full items-center gap-4 rounded-xl border border-dashed border-border bg-transparent p-4 text-left transition-[background-color] duration-200 hover:bg-bg-elevated"
     >
-      <div className="grid size-11 place-items-center border-2 border-dashed border-fg/35 text-fg">
+      <div className="grid size-10 place-items-center rounded-xl border border-dashed border-border text-fg">
         <Plus className="size-5" strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">

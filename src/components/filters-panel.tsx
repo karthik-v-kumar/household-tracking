@@ -401,7 +401,7 @@ function FilterDialog({
                     type="button"
                     onClick={() => setIntervalDays(row.days)}
                     className={cn(
-                      "min-h-11 rounded-full border px-3 py-2 text-sm",
+                      "h-8 rounded-full border px-2.5 text-sm",
                       selected
                         ? "border-fg bg-primary text-primary-fg"
                         : "border-border bg-bg-elevated text-fg",
@@ -431,7 +431,7 @@ function FilterDialog({
                     type="button"
                     onClick={() => setStockLeadDays(row.days)}
                     className={cn(
-                      "min-h-11 rounded-full border px-3 py-2 text-sm",
+                      "h-8 rounded-full border px-2.5 text-sm",
                       selected
                         ? "border-fg bg-primary text-primary-fg"
                         : "border-border bg-bg-elevated text-fg",

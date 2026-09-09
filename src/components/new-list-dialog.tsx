@@ -97,7 +97,7 @@ export function NewListDialog({
                     type="button"
                     onClick={() => setIcon(item.id)}
                     className={cn(
-                      "grid size-11 place-items-center rounded-md border-2",
+                      "grid size-10 place-items-center rounded-xl border",
                       icon === item.id
                         ? "border-fg bg-primary text-primary-fg"
                         : "border-border bg-bg-elevated text-fg",
@@ -120,7 +120,7 @@ export function NewListDialog({
                   aria-label={item.label}
                   onClick={() => setColor(item.id)}
                   className={cn(
-                    "size-9 rounded-full border border-border",
+                    "size-7 rounded-full border border-border",
                     LIST_COLOR_CLASS[item.id],
                     color === item.id && "ring-2 ring-fg ring-offset-2 ring-offset-surface",
                   )}

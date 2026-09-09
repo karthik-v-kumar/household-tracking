@@ -337,7 +337,7 @@ function ListBody({ listId }: { listId: number }) {
           />
         ) : (
           <>
-            <div className="panel px-3 py-1">
+            <div className="panel overflow-hidden px-3 py-1">
               {openItems.map((item) => (
                 <ItemRow
                   key={item.id}
@@ -389,7 +389,7 @@ function ListBody({ listId }: { listId: number }) {
                     Clear
                   </Button>
                 </div>
-                <div className="panel mt-2 px-3 py-1">
+                <div className="panel mt-2 overflow-hidden px-3 py-1">
                   {bought.map((item) => (
                     <ItemRow
                       key={item.id}
