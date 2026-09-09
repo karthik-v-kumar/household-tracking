@@ -5,28 +5,29 @@
   --color-bg: #f3eee4;
   --color-bg-elevated: #ebe4d6;
   --color-surface: #faf7f0;
-  --color-fg: #1c1915;
+  --color-fg: #161410;
   --color-muted: #6b6b6b;
   --color-subtle: #8e8880;
-  --color-border: #ddd4c6;
-  --color-primary: #1c1915;
+  --color-border: #cfc6b6;
+  --color-hairline: #ddd4c6;
+  --color-primary: #161410;
   --color-primary-fg: #faf7f0;
-  --color-ok: #3d5c45;
+  --color-ok: #2f5a3a;
   --color-warn: #8a5a2b;
-  --color-danger: #8b3a32;
-  --color-ring: #1c1915;
-  --color-list-sage: #3d5c45;
+  --color-danger: #b42318;
+  --color-ring: #161410;
+  --color-list-sage: #2f5a3a;
   --color-list-clay: #8b5a3c;
   --color-list-slate: #3d4a52;
   --color-list-olive: #5a5c38;
   --color-list-wine: #6b3a40;
-  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --shadow-card: 0 1px 0 color-mix(in oklab, var(--color-fg) 6%, transparent);
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --shadow-card: none;
   --ease-civic: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -88,7 +89,8 @@
   h3 {
     text-wrap: balance;
     font-family: var(--font-display);
-    font-weight: 400;
+    font-weight: 800;
+    letter-spacing: -0.035em;
   }
 
   p {
@@ -106,14 +108,25 @@
     display: inline-flex;
     align-items: center;
     font-family: var(--font-display);
-    font-size: 1.35rem;
+    font-size: 1.05rem;
+    font-weight: 800;
     line-height: 1;
-    letter-spacing: -0.02em;
-    padding: 0.4rem 1.05rem 0.45rem;
-    border: 1px solid color-mix(in oklab, var(--color-fg) 12%, transparent);
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--color-fg) 6%, transparent);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.45rem 0 0.35rem;
+    border: 0;
+    border-bottom: 2px solid var(--color-fg);
+    border-radius: 0;
+    background: transparent;
     color: var(--color-fg);
+  }
+
+  .kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
   }
 
   .civic-link {
@@ -126,7 +139,7 @@
     position: absolute;
     left: 0;
     bottom: 0;
-    height: 1px;
+    height: 2px;
     width: 100%;
     background: currentColor;
     transform: scaleX(0);
@@ -142,13 +155,14 @@
 
   .panel {
     background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-fg);
+    border-radius: 0;
   }
 
   .still-life {
     overflow: hidden;
-    border-radius: var(--radius-lg);
+    border-radius: 0;
+    border: 2px solid var(--color-fg);
     background-color: var(--color-bg-elevated);
   }
 
@@ -164,11 +178,9 @@
   .overlay-surface {
     background-color: var(--color-surface);
     color: var(--color-fg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow:
-      0 0 0 1px color-mix(in oklab, var(--color-fg) 6%, transparent),
-      0 16px 40px color-mix(in oklab, var(--color-fg) 18%, transparent);
+    border: 2px solid var(--color-fg);
+    border-radius: 0;
+    box-shadow: 8px 8px 0 color-mix(in oklab, var(--color-fg) 18%, transparent);
   }
 
   .chip-tray {
@@ -186,8 +198,45 @@
   }
 
   [data-usuals-drop][data-drop-active] {
-    box-shadow: inset 0 0 0 1px var(--color-fg);
-    border-radius: var(--radius-lg);
+    box-shadow: inset 0 0 0 2px var(--color-fg);
+  }
+
+  .swipe-row {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-fg);
+  }
+
+  .swipe-row-action {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 1.1rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .swipe-row-action.is-buy {
+    justify-content: flex-start;
+    background: var(--color-ok);
+    color: var(--color-primary-fg);
+  }
+
+  .swipe-row-action.is-undo {
+    justify-content: flex-end;
+    background: var(--color-fg);
+    color: var(--color-bg);
+  }
+
+  .swipe-row-front {
+    position: relative;
+    z-index: 1;
+    background: var(--color-surface);
+    will-change: transform;
   }
 
   .dialog-sheet {
