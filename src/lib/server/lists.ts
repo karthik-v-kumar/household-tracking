@@ -448,7 +448,7 @@ export const addListItem = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const sql = await getSqlClient();
     const membership = await requireMembership(sql, context.userId);
-    await assertListInHousehold(sql, data.listId, membership.id);
+    const list = await assertListInHousehold(sql, data.listId, membership.id);
     const name = data.name.trim();
     const catalogId = await upsertCatalog(
       sql,
@@ -476,6 +476,14 @@ export const addListItem = createServerFn({ method: "POST" })
           where id = ${found.id} and household_id = ${membership.id}
         `;
         await touchHousehold(sql, membership.id);
+        const { notifyListAdd } = await import("./push-send");
+        await notifyListAdd(sql, {
+          membership,
+          actorUserId: context.userId,
+          listId: data.listId,
+          listName: list.name,
+          itemName: name,
+        });
         return { id: Number(found.id), revived: true };
       }
       return { id: Number(found.id), already: true };
@@ -491,6 +499,14 @@ export const addListItem = createServerFn({ method: "POST" })
       returning id
     `;
     await touchHousehold(sql, membership.id);
+    const { notifyListAdd } = await import("./push-send");
+    await notifyListAdd(sql, {
+      membership,
+      actorUserId: context.userId,
+      listId: data.listId,
+      listName: list.name,
+      itemName: name,
+    });
     return { id: Number(rows[0]!.id), already: false };
   });
 
@@ -643,7 +659,7 @@ export const addUsualsToList = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const sql = await getSqlClient();
     const membership = await requireMembership(sql, context.userId);
-    await assertListInHousehold(sql, data.listId, membership.id);
+    const list = await assertListInHousehold(sql, data.listId, membership.id);
 
     const usuals = await sql<{ id: number; name: string; default_list_id: number | null }>`
       select id, name, default_list_id from catalog_items
@@ -678,7 +694,17 @@ export const addUsualsToList = createServerFn({ method: "POST" })
       `;
       added += 1;
     }
-    if (added > 0) await touchHousehold(sql, membership.id);
+    if (added > 0) {
+      await touchHousehold(sql, membership.id);
+      const { notifyListAdd } = await import("./push-send");
+      await notifyListAdd(sql, {
+        membership,
+        actorUserId: context.userId,
+        listId: data.listId,
+        listName: list.name,
+        count: added,
+      });
+    }
     return { added };
   });
 

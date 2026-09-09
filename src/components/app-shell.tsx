@@ -3,6 +3,7 @@ import { ClipboardList, Package, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { SettingsMenu } from "@/components/settings-menu";
+import { PushRegistrar } from "@/components/push-opt-in";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +54,10 @@ export function AppShell({
             {isPending ? (
               <div className="size-9 animate-pulse bg-fg/8" />
             ) : (
-              <SettingsMenu />
+              <>
+                <PushRegistrar />
+                <SettingsMenu />
+              </>
             )}
           </div>
         </div>

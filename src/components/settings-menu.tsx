@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PushSettingsItem } from "@/components/push-opt-in";
 
 export function SettingsMenu() {
   const user = useCurrentUser();
@@ -76,6 +77,8 @@ export function SettingsMenu() {
               <span className="block text-xs text-muted">Edit name</span>
             </span>
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <PushSettingsItem />
           <DropdownMenuSeparator />
           <DropdownMenuItem
             danger

@@ -260,6 +260,21 @@ export const addLowInventoryToLists = createServerFn({ method: "POST" })
       `;
       added += 1;
     }
-    if (added > 0) await touchHousehold(sql, membership.id);
+    if (added > 0) {
+      await touchHousehold(sql, membership.id);
+      const { notifyListAdd } = await import("./push-send");
+      const listName =
+        wanted.length === 1
+          ? (wanted[0]!.defaultListName ?? "the list")
+          : "the list";
+      await notifyListAdd(sql, {
+        membership,
+        actorUserId: context.userId,
+        listId: Number(wanted[0]?.defaultListId ?? fallbackListId),
+        listName,
+        count: added,
+        itemName: wanted[0]?.name,
+      });
+    }
     return { added };
   });
