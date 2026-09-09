@@ -1,59 +1,34 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-const CREAM = "#F3EEE4";
-const INK = "#1C1915";
+const BG = "#8B3A24";
+const FG = "#F4E6D4";
 const S = 1024;
-// Fill the iOS live area (center ~80%). Squircle clips the outer 10%.
-const TARGET = 0.76;
+const TARGET = 0.64;
 
 function glyph() {
-  const cx = 0;
-  const cy = 0;
-  const stroke = 132;
-  const r = 318;
-
-  const startDeg = 310;
-  const endDeg = 244;
-  const toRad = (d) => (d * Math.PI) / 180;
-  const pt = (deg, rad = r) => {
-    const a = toRad(deg);
-    return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)];
-  };
-  const [sx, sy] = pt(startDeg);
-  const [ex, ey] = pt(endDeg);
-
-  const headAngle = toRad(-60);
-  const hx = Math.cos(headAngle);
-  const hy = Math.sin(headAngle);
-  const nx = -hy;
-  const ny = hx;
-  const tip = stroke * 1.42;
-  const half = stroke * 0.86;
-  const overlap = stroke * 0.62;
-  const f = (n) => n.toFixed(2);
-
-  const checkStroke = stroke * 0.97;
-
-  return `
-    <path d="M ${f(sx)} ${f(sy)} A ${f(r)} ${f(r)} 0 1 1 ${f(ex)} ${f(ey)}"
-      fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round"/>
-    <path d="M ${f(ex + hx * tip)} ${f(ey + hy * tip)}
-             L ${f(ex - hx * overlap + nx * half)} ${f(ey - hy * overlap + ny * half)}
-             L ${f(ex - hx * overlap - nx * half)} ${f(ey - hy * overlap - ny * half)} Z"
-      fill="currentColor"/>
-    <path d="M ${f(cx - r * 0.42)} ${f(cy + r * 0.08)}
-             L ${f(cx - r * 0.08)} ${f(cy + r * 0.46)}
-             L ${f(cx + r * 0.58)} ${f(cy - r * 0.48)}"
-      fill="none" stroke="currentColor" stroke-width="${checkStroke}"
-      stroke-linecap="round" stroke-linejoin="round"/>
-  `;
+  const cell = 200;
+  const gap = 52;
+  const r = 52;
+  const start = -(cell + gap / 2);
+  const cells = [
+    [start, start, 1],
+    [start + cell + gap, start, 1],
+    [start, start + cell + gap, 1],
+    [start + cell + gap, start + cell + gap, 0.38],
+  ];
+  return cells
+    .map(
+      ([x, y, a]) =>
+        `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="${r}" opacity="${a}"/>`,
+    )
+    .join("");
 }
 
 function svgAt(tx, ty, scale) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}">
-    <rect width="${S}" height="${S}" fill="${CREAM}"/>
-    <g color="${INK}" transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale.toFixed(4)})">${glyph()}</g>
+    <rect width="${S}" height="${S}" fill="${BG}"/>
+    <g fill="${FG}" transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale.toFixed(4)})">${glyph()}</g>
   </svg>`;
 }
 
@@ -62,17 +37,23 @@ function pageHtml(width, height, svg) {
 <html>
 <head>
   <style>
-    html, body { margin: 0; width: ${width}px; height: ${height}px; background: ${CREAM}; }
-    svg { display: block; width: ${width}px; height: ${height}px; color: ${INK}; }
+    html, body { margin: 0; width: ${width}px; height: ${height}px; background: ${BG}; }
+    svg { display: block; width: ${width}px; height: ${height}px; }
   </style>
 </head>
 <body>${svg}</body>
 </html>`;
 }
 
-async function inkBox(page, width, height) {
+function hexToRgb(hex) {
+  const n = hex.replace("#", "");
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+}
+
+async function markBox(page, width, height) {
+  const [br, bgG, bb] = hexToRgb(BG);
   return page.evaluate(
-    ({ width, height }) => {
+    ({ width, height, br, bgG, bb }) => {
       const svg = document.querySelector("svg");
       const xml = new XMLSerializer().serializeToString(svg);
       const url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml;charset=utf-8" }));
@@ -93,7 +74,7 @@ async function inkBox(page, width, height) {
           for (let y = 0; y < height; y += 1) {
             for (let x = 0; x < width; x += 1) {
               const i = (y * width + x) * 4;
-              if (data[i] < 220 || data[i + 1] < 210 || data[i + 2] < 190) {
+              if (Math.abs(data[i] - br) + Math.abs(data[i + 1] - bgG) + Math.abs(data[i + 2] - bb) > 28) {
                 found = true;
                 if (x < minX) minX = x;
                 if (y < minY) minY = y;
@@ -104,7 +85,7 @@ async function inkBox(page, width, height) {
           }
           URL.revokeObjectURL(url);
           if (!found) {
-            resolve({ minX: 0, minY: 0, maxX: width, maxY: height });
+            resolve({ minX: 0, minY: 0, maxX: width, maxY: height, cx: width / 2, cy: height / 2, w: width, h: height });
             return;
           }
           resolve({
@@ -122,7 +103,7 @@ async function inkBox(page, width, height) {
         img.src = url;
       });
     },
-    { width, height },
+    { width, height, br, bgG, bb },
   );
 }
 
@@ -136,19 +117,15 @@ const page = await browser.newPage({
 });
 
 await page.setContent(pageHtml(S, S, svgAt(S / 2, S / 2, 1)));
-const box = await inkBox(page, S, S);
+const box = await markBox(page, S, S);
 const scale = (S * TARGET) / Math.max(box.w, box.h);
-const tx = S / 2 - box.cx * scale + (S / 2) * (1 - scale);
-const ty = S / 2 - box.cy * scale + (S / 2) * (1 - scale);
-// First pass was drawn with scale 1 at (512,512). Re-center using measured ink.
 const tx2 = S / 2 - (box.cx - S / 2) * scale;
 const ty2 = S / 2 - (box.cy - S / 2) * scale;
-
 const placed = svgAt(tx2, ty2, scale);
 writeFileSync("/workspace/public/favicon.svg", placed);
 
 await page.setContent(pageHtml(S, S, placed));
-const check = await inkBox(page, S, S);
+const check = await markBox(page, S, S);
 console.log("bbox", box, "scale", scale, "placed", check);
 
 async function shot(width, height, outPath, type = "png") {
@@ -173,15 +150,15 @@ await shot(180, 180, "/workspace/public/__grok/icon-180.png");
     viewport: { width: 1200, height: 630 },
     deviceScaleFactor: 1,
   });
-  const size = 520;
+  const size = 420;
   const x = Math.round((1200 - size) / 2);
   const y = Math.round((630 - size) / 2);
   await og.setContent(`<!doctype html>
 <html>
 <head>
   <style>
-    html, body { margin: 0; width: 1200px; height: 630px; background: ${CREAM}; }
-    svg { display: block; position: absolute; left: ${x}px; top: ${y}px; width: ${size}px; height: ${size}px; color: ${INK}; }
+    html, body { margin: 0; width: 1200px; height: 630px; background: ${BG}; }
+    svg { display: block; position: absolute; left: ${x}px; top: ${y}px; width: ${size}px; height: ${size}px; }
   </style>
 </head>
 <body>${placed}</body>
