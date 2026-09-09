@@ -64,7 +64,13 @@ export function ItemRow({
   }
 
   const swiping = Math.abs(dx) > 8;
-  const meta = [item.quantity, item.notes].filter(Boolean).join(" · ");
+  const source =
+    item.notes === "From inventory"
+      ? "Inventory"
+      : item.notes === "From filters"
+        ? "Filter"
+        : item.notes;
+  const extraNote = source && source !== "Inventory" && source !== "Filter" ? source : null;
 
   return (
     <div ref={rowRef} className="swipe-row border-b border-hairline last:border-0">
@@ -76,7 +82,7 @@ export function ItemRow({
       </div>
       <div
         className={cn(
-          "swipe-row-front flex items-center gap-3 px-4 py-1",
+          "swipe-row-front flex h-14 items-center gap-3 px-4",
           item.checked && "is-checked",
           snapping && "transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
         )}
@@ -144,19 +150,32 @@ export function ItemRow({
             if (committing.current || swiping) return;
             onToggle();
           }}
-          className="min-w-0 flex-1 py-2 text-left"
+          className="min-w-0 flex-1 text-left"
         >
           <p className={cn("truncate text-[0.98rem] font-semibold tracking-tight", item.checked && "text-muted line-through")}>
             {item.name}
           </p>
-          {meta ? <p className="mt-0.5 truncate text-xs text-muted">{meta}</p> : null}
         </button>
         <div
           className={cn(
-            "flex shrink-0 items-center transition-opacity duration-150",
+            "flex shrink-0 items-center gap-1.5 transition-opacity duration-150",
             swiping && "pointer-events-none opacity-0",
           )}
         >
+          {item.quantity ? (
+            <span className="rounded-full bg-fg/6 px-2 py-0.5 text-[0.65rem] font-semibold text-muted">
+              {item.quantity}
+            </span>
+          ) : null}
+          {source === "Inventory" || source === "Filter" ? (
+            <span className="rounded-full bg-warn/12 px-2 py-0.5 text-[0.65rem] font-semibold text-warn">
+              {source === "Inventory" ? "From inventory" : "From filters"}
+            </span>
+          ) : extraNote ? (
+            <span className="max-w-24 truncate rounded-full bg-fg/6 px-2 py-0.5 text-[0.65rem] font-semibold text-muted">
+              {extraNote}
+            </span>
+          ) : null}
           {item.isStaple ? (
             <Star className="size-3.5 shrink-0 fill-fg text-fg" />
           ) : null}
