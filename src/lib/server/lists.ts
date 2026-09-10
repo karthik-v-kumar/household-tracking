@@ -325,7 +325,7 @@ export const deleteList = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-export const getListDetail = createServerFn({ method: "GET" })
+export const getListDetail = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) =>
     z.object({ listId: z.number().int().positive() }).parse(input),

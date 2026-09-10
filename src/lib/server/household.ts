@@ -31,7 +31,7 @@ function mapHousehold(
   };
 }
 
-export const getMyHousehold = createServerFn({ method: "GET" })
+export const getMyHousehold = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     const sql = await getSqlClient();
@@ -40,7 +40,7 @@ export const getMyHousehold = createServerFn({ method: "GET" })
     return mapHousehold(membership);
   });
 
-export const getOverview = createServerFn({ method: "GET" })
+export const getOverview = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<Overview | null> => {
     const sql = await getSqlClient();
@@ -49,22 +49,36 @@ export const getOverview = createServerFn({ method: "GET" })
     return getOverviewData(sql, context.userId, membership);
   });
 
-export const getHouseholdPulse = createServerFn({ method: "GET" })
+export const getHouseholdPulse = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     const sql = await getSqlClient();
     const membership = await getMembership(sql, context.userId);
     if (!membership) return { pulse: null as string | null, members: 0 };
-    const rows = await sql<{ pulse: string | Date | null; members: number | string }>`
-      select h.updated_at as pulse,
-             (select count(*)::int from household_members m where m.household_id = h.id) as members
+    const rows = await sql<{
+      pulse: string | Date | null;
+      members: number | string;
+      inventory_n: number | string;
+      upkeep_n: number | string;
+      list_n: number | string;
+    }>`
+      select greatest(
+               h.updated_at,
+               coalesce((select max(i.updated_at) from inventory_items i where i.household_id = h.id), h.updated_at),
+               coalesce((select max(u.updated_at) from upkeep_items u where u.household_id = h.id), h.updated_at)
+             ) as pulse,
+             (select count(*)::int from household_members m where m.household_id = h.id) as members,
+             (select count(*)::int from inventory_items i where i.household_id = h.id) as inventory_n,
+             (select count(*)::int from upkeep_items u where u.household_id = h.id) as upkeep_n,
+             (select count(*)::int from list_items li where li.household_id = h.id) as list_n
       from households h
       where h.id = ${membership.id}
       limit 1
     `;
     const row = rows[0];
+    const stamp = toIso(row?.pulse ?? null) ?? "0";
     return {
-      pulse: toIso(row?.pulse ?? null),
+      pulse: `${stamp}:${row?.inventory_n ?? 0}:${row?.upkeep_n ?? 0}:${row?.list_n ?? 0}`,
       members: Number(row?.members ?? 0),
     };
   });

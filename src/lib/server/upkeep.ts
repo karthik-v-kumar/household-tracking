@@ -84,7 +84,7 @@ export async function loadUpkeep(userId: string): Promise<UpkeepItem[]> {
     );
 }
 
-export const listUpkeep = createServerFn({ method: "GET" })
+export const listUpkeep = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => loadUpkeep(context.userId));
 

@@ -40,15 +40,22 @@ export function LiveSync() {
   });
 
   useEffect(() => {
-    if (!hidden) void queryClient.invalidateQueries({ queryKey: ["pulse"] });
+    if (!hidden) {
+      void queryClient.invalidateQueries({ queryKey: ["pulse"] });
+      void queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      void queryClient.invalidateQueries({ queryKey: ["upkeep"] });
+      void queryClient.invalidateQueries({ queryKey: ["overview"] });
+    }
   }, [hidden, queryClient]);
 
   useEffect(() => {
     const next = pulse.data?.pulse ?? null;
     if (next && lastPulse.current && next !== lastPulse.current) {
-      void queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] !== "pulse",
-      });
+      void queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      void queryClient.invalidateQueries({ queryKey: ["upkeep"] });
+      void queryClient.invalidateQueries({ queryKey: ["overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["list"] });
+      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
     }
     if (next) lastPulse.current = next;
   }, [pulse.data?.pulse, queryClient]);

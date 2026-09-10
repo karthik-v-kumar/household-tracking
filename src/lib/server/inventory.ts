@@ -48,7 +48,7 @@ async function loadInventory(userId: string): Promise<InventoryItem[]> {
     );
 }
 
-export const listInventory = createServerFn({ method: "GET" })
+export const listInventory = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => loadInventory(context.userId));
 
