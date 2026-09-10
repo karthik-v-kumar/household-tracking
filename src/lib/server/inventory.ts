@@ -106,6 +106,13 @@ export const addInventoryItem = createServerFn({ method: "POST" })
       returning id
     `;
     await touchHousehold(sql, membership.id);
+    const { notifyPantryChange } = await import("./push-send");
+    await notifyPantryChange(sql, {
+      membership,
+      actorUserId: context.userId,
+      itemName: data.name,
+      detail: `added ${data.name} to pantry`,
+    });
     return { id: Number(rows[0]!.id) };
   });
 
@@ -128,8 +135,8 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const sql = await getSqlClient();
     const membership = await requireMembership(sql, context.userId);
-    const existing = await sql<{ id: number; level: string }>`
-      select id, level from inventory_items
+    const existing = await sql<{ id: number; level: string; name: string }>`
+      select id, level, name from inventory_items
       where id = ${data.itemId} and household_id = ${membership.id}
       limit 1
     `;
@@ -206,6 +213,18 @@ export const updateInventoryItem = createServerFn({ method: "POST" })
       `;
     }
     await touchHousehold(sql, membership.id);
+    if (data.level) {
+      const level = asLevel(data.level);
+      if ((level === "low" || level === "out") && existing[0].level !== level) {
+        const { notifyPantryChange } = await import("./push-send");
+        await notifyPantryChange(sql, {
+          membership,
+          actorUserId: context.userId,
+          itemName: data.name ?? existing[0].name,
+          detail: level === "out" ? `marked ${data.name ?? existing[0].name} out` : `marked ${data.name ?? existing[0].name} low`,
+        });
+      }
+    }
     return { ok: true as const };
   });
 

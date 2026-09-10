@@ -15,7 +15,7 @@ self.addEventListener("push", (event) => {
   }
   const title = data.title || "Stocked";
   const options = {
-    body: data.body || "Something was added to a list.",
+    body: data.body || "Something changed in the household.",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
     data: { url: data.url || "/" },
@@ -29,7 +29,8 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if ("focus" in client) {
+        const href = "url" in client ? String(client.url) : "";
+        if (href && "focus" in client) {
           client.focus();
           if ("navigate" in client) client.navigate(url);
           return;

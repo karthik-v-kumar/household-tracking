@@ -5,8 +5,10 @@ import {
   deletePushSubscription,
   getPushPublicKey,
   savePushSubscription,
+  sendTestPush,
 } from "@/lib/server/push";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
@@ -35,14 +37,18 @@ function urlBase64ToUint8Array(value: string) {
 }
 
 async function getRegistration() {
-  return navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  return navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
 }
 
-async function subscribeAndSave() {
+async function subscribeAndSave(forceNew = false) {
   const registration = await getRegistration();
   await navigator.serviceWorker.ready;
   const { publicKey } = await getPushPublicKey();
-  const existing = await registration.pushManager.getSubscription();
+  let existing = await registration.pushManager.getSubscription();
+  if (forceNew && existing) {
+    await existing.unsubscribe().catch(() => undefined);
+    existing = null;
+  }
   const subscription =
     existing ??
     (await registration.pushManager.subscribe({
@@ -62,7 +68,7 @@ async function subscribeAndSave() {
 }
 
 async function unsubscribeAndForget() {
-  const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+  const registration = await navigator.serviceWorker.getRegistration("/");
   const subscription = await registration?.pushManager.getSubscription();
   if (subscription) {
     await deletePushSubscription({ data: { endpoint: subscription.endpoint } }).catch(() => undefined);
@@ -74,9 +80,22 @@ export function PushRegistrar() {
   useEffect(() => {
     if (!pushSupported()) return;
     if (Notification.permission !== "granted") return;
-    void subscribeAndSave().catch(() => undefined);
+    void subscribeAndSave(false).catch(() => undefined);
   }, []);
   return null;
+}
+
+async function turnOn() {
+  if (!pushSupported()) {
+    throw new Error("Add Stocked to your Home Screen, then turn on alerts.");
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    const err = new Error(permission === "denied" ? "blocked" : "Alerts stayed off");
+    throw err;
+  }
+  await subscribeAndSave(true);
+  await sendTestPush().catch(() => undefined);
 }
 
 export function PushSettingsItem() {
@@ -95,30 +114,22 @@ export function PushSettingsItem() {
       return;
     }
     void (async () => {
-      const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+      const registration = await navigator.serviceWorker.getRegistration("/");
       const sub = await registration?.pushManager.getSubscription();
       setStatus(Notification.permission === "granted" && sub ? "on" : "off");
     })();
   }, []);
 
   async function enable() {
-    if (!pushSupported()) {
-      toast.message("Add Stocked to your Home Screen, then turn on alerts.");
-      return;
-    }
     setBusy(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setStatus(permission === "denied" ? "blocked" : "off");
-        toast.message("Alerts stayed off");
-        return;
-      }
-      await subscribeAndSave();
+      await turnOn();
       setStatus("on");
-      toast.success("You’ll get a ping when someone adds to a list");
+      toast.success("Alerts on — you should get a test ping");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not enable alerts");
+      const message = err instanceof Error ? err.message : "Could not enable alerts";
+      if (message === "blocked") setStatus("blocked");
+      else toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -182,11 +193,74 @@ export function PushSettingsItem() {
         <BellOff className="mt-0.5 size-4 shrink-0" />
       )}
       <span className="min-w-0">
-        <span className="block">{status === "on" ? "List alerts on" : "Notify on new items"}</span>
+        <span className="block">{status === "on" ? "Alerts on" : "Notify on changes"}</span>
         <span className="block text-xs text-muted">
-          {status === "on" ? "Ping when someone adds to a list" : "Turn on for this iPhone"}
+          {status === "on" ? "Ping when they add to a list or pantry" : "Turn on for this iPhone"}
         </span>
       </span>
     </DropdownMenuItem>
+  );
+}
+
+export function AlertsCard() {
+  const [status, setStatus] = useState<"loading" | "off" | "on" | "blocked" | "browser">("loading");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!pushSupported()) {
+      setStatus("browser");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setStatus("blocked");
+      return;
+    }
+    void (async () => {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const sub = await registration?.pushManager.getSubscription();
+      setStatus(Notification.permission === "granted" && sub ? "on" : "off");
+    })();
+  }, []);
+
+  if (status === "loading") return null;
+
+  return (
+    <section className="mt-7">
+      <p className="kicker">Alerts</p>
+      <div className="mt-2.5 border-t border-hairline py-4">
+        <p className="text-base font-medium tracking-[-0.012em]">When they add something</p>
+        <p className="mt-1 text-[13px] text-muted">
+          {status === "on"
+            ? "This iPhone will ping for list and pantry changes."
+            : status === "blocked"
+              ? "Notifications are blocked in iPhone Settings."
+              : isStandalone()
+                ? "Turn on so you hear it even if Stocked is closed."
+                : "Add Stocked to your Home Screen, open it from there, then turn this on. iPhone only sends alerts from the Home Screen app."}
+        </p>
+        {status === "off" && (isStandalone() || pushSupported()) ? (
+          <Button
+            className="mt-3"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void turnOn()
+                .then(() => {
+                  setStatus("on");
+                  toast.success("Alerts on — you should get a test ping");
+                })
+                .catch((err) => {
+                  const message = err instanceof Error ? err.message : "Could not enable alerts";
+                  if (message === "blocked") setStatus("blocked");
+                  else toast.error(message);
+                })
+                .finally(() => setBusy(false));
+            }}
+          >
+            Turn on alerts
+          </Button>
+        ) : null}
+      </div>
+    </section>
   );
 }

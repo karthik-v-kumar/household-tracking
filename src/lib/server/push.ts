@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSqlClient, requireMembership } from "./access";
 
-export const getPushPublicKey = createServerFn({ method: "GET" })
+export const getPushPublicKey = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async () => {
     const sql = await getSqlClient();
@@ -52,5 +52,22 @@ export const deletePushSubscription = createServerFn({ method: "POST" })
       delete from push_subscriptions
       where endpoint = ${data.endpoint} and user_id = ${context.userId} and household_id = ${membership.id}
     `;
+    return { ok: true as const };
+  });
+
+export const sendTestPush = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const sql = await getSqlClient();
+    const membership = await requireMembership(sql, context.userId);
+    const { notifyHousehold } = await import("./push-send");
+    await notifyHousehold(sql, {
+      membership,
+      actorUserId: context.userId,
+      title: "Stocked",
+      body: "Alerts are on. You’ll hear when they add to a list or the pantry.",
+      url: "/",
+      includeActor: true,
+    });
     return { ok: true as const };
   });

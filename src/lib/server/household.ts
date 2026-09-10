@@ -54,13 +54,14 @@ export const getHouseholdPulse = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const sql = await getSqlClient();
     const membership = await getMembership(sql, context.userId);
-    if (!membership) return { pulse: null as string | null, members: 0 };
+    if (!membership) return { pulse: null as string | null, members: 0, notice: null };
     const rows = await sql<{
       pulse: string | Date | null;
       members: number | string;
       inventory_n: number | string;
       upkeep_n: number | string;
       list_n: number | string;
+      last_notice: unknown;
     }>`
       select greatest(
                h.updated_at,
@@ -70,16 +71,36 @@ export const getHouseholdPulse = createServerFn({ method: "POST" })
              (select count(*)::int from household_members m where m.household_id = h.id) as members,
              (select count(*)::int from inventory_items i where i.household_id = h.id) as inventory_n,
              (select count(*)::int from upkeep_items u where u.household_id = h.id) as upkeep_n,
-             (select count(*)::int from list_items li where li.household_id = h.id) as list_n
+             (select count(*)::int from list_items li where li.household_id = h.id) as list_n,
+             h.last_notice
       from households h
       where h.id = ${membership.id}
       limit 1
     `;
     const row = rows[0];
     const stamp = toIso(row?.pulse ?? null) ?? "0";
+    type Notice = {
+      id: number;
+      actorUserId: string;
+      title: string;
+      body: string;
+      url: string;
+    };
+    let notice: Notice | null = null;
+    const raw = row?.last_notice;
+    if (raw && typeof raw === "object" && "id" in (raw as Record<string, unknown>)) {
+      notice = raw as Notice;
+    } else if (typeof raw === "string") {
+      try {
+        notice = JSON.parse(raw) as Notice;
+      } catch {
+        notice = null;
+      }
+    }
     return {
       pulse: `${stamp}:${row?.inventory_n ?? 0}:${row?.upkeep_n ?? 0}:${row?.list_n ?? 0}`,
       members: Number(row?.members ?? 0),
+      notice,
     };
   });
 

@@ -5,6 +5,7 @@ import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AppShell } from "@/components/app-shell";
+import { AlertsCard } from "@/components/push-opt-in";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -155,6 +156,8 @@ function HouseholdBody({ overview }: { overview: Overview }) {
           </Button>
         </div>
       </form>
+
+      <AlertsCard />
 
       <button
         type="button"
