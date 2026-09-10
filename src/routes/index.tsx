@@ -86,8 +86,8 @@ function HomeContent({
       title="This weekend"
       stat={
         remaining === 0
-          ? "Nothing on the lists yet."
-          : `${remaining} item${remaining === 1 ? "" : "s"} still to pick up.`
+          ? "Nothing on the lists yet"
+          : `${remaining} item${remaining === 1 ? "" : "s"} still to pick up`
       }
       actions={
         <Button size="icon-sm" onClick={() => { setEditing(null); setNewOpen(true); }} aria-label="New list">
@@ -97,45 +97,35 @@ function HomeContent({
     >
       <ShareInviteBanner overview={overview} />
       {low.length > 0 ? (
-        <section className="panel mb-4 px-4 py-3">
-          <h2 className="text-base font-extrabold tracking-tight">Running low</h2>
-          <p className="mt-0.5 text-xs text-muted">Add only what you actually want this week. Once it is on a list, it leaves this board.</p>
-          <ul className="mt-2 divide-y divide-hairline">
-            {low.map((item) => {
-              const level = INVENTORY_LEVELS.find((row) => row.id === item.effectiveLevel)?.label ?? item.effectiveLevel;
-              return (
-                <li key={item.id}>
-                  <NeedRow
-                    name={item.name}
-                    detail={[level, item.defaultListName].filter(Boolean).join(" · ")}
-                    busy={addLow.isPending && addLow.variables?.[0] === item.id}
-                    onAdd={() => addLow.mutate([item.id])}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        <div className="mb-5 grid gap-2.5">
+          {low.map((item) => {
+            const level = INVENTORY_LEVELS.find((row) => row.id === item.effectiveLevel)?.label ?? item.effectiveLevel;
+            return (
+              <NeedRow
+                key={item.id}
+                name={`${item.name} is running ${level.toLowerCase()}`}
+                detail={item.defaultListName ? `Usually bought at ${item.defaultListName}` : undefined}
+                busy={addLow.isPending && addLow.variables?.[0] === item.id}
+                onAdd={() => addLow.mutate([item.id])}
+              />
+            );
+          })}
+        </div>
       ) : null}
 
       {due.length > 0 ? (
-        <section className="panel mb-4 px-4 py-3">
-          <h2 className="text-base font-extrabold tracking-tight">Filters</h2>
-          <p className="mt-0.5 text-xs text-muted">Add the ones you want to pick up now.</p>
-          <ul className="mt-2 divide-y divide-hairline">
-            {due.map((item) => (
-              <li key={item.id}>
-                <NeedRow
-                  name={item.name}
-                  detail={[formatUpkeepDue(item.daysUntil), item.defaultListName].filter(Boolean).join(" · ")}
-                  canAdd={item.needToBuy}
-                  busy={addFilters.isPending && addFilters.variables?.[0] === item.id}
-                  onAdd={() => addFilters.mutate([item.id])}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div className="mb-5 grid gap-2.5">
+          {due.map((item) => (
+            <NeedRow
+              key={item.id}
+              name={item.name}
+              detail={[formatUpkeepDue(item.daysUntil), item.defaultListName].filter(Boolean).join(" · ")}
+              canAdd={item.needToBuy}
+              busy={addFilters.isPending && addFilters.variables?.[0] === item.id}
+              onAdd={() => addFilters.mutate([item.id])}
+            />
+          ))}
+        </div>
       ) : null}
 
       {overview.lists.length === 0 ? (
@@ -158,18 +148,25 @@ function HomeContent({
           }
         />
       ) : (
-        <div className="grid gap-2.5">
-          {overview.lists.map((list) => (
-            <ListCard
-              key={list.id}
-              list={list}
-              onEdit={() => {
-                setNewOpen(false);
-                setEditing(list);
-              }}
-              onDelete={() => setDeleting(list)}
-            />
-          ))}
+        <div>
+          <div className="flex items-baseline justify-between">
+            <p className="kicker">
+              {overview.lists.length} list{overview.lists.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="mt-2.5 border-t border-hairline">
+            {overview.lists.map((list) => (
+              <ListCard
+                key={list.id}
+                list={list}
+                onEdit={() => {
+                  setNewOpen(false);
+                  setEditing(list);
+                }}
+                onDelete={() => setDeleting(list)}
+              />
+            ))}
+          </div>
           <NewListCard
             onClick={() => {
               setEditing(null);
@@ -230,17 +227,18 @@ function NeedRow({
   onAdd: () => void;
 }) {
   return (
-    <div className="flex min-h-12 items-center gap-3 py-1">
+    <div className="nudge">
+      <span className="size-1.5 shrink-0 rounded-full bg-accent" />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold tracking-tight">{name}</p>
-        {detail ? <p className="truncate text-xs text-muted">{detail}</p> : null}
+        <p className="truncate text-sm font-semibold tracking-tight">{name}</p>
+        {detail ? <p className="truncate text-[12.5px] text-muted">{detail}</p> : null}
       </div>
       {canAdd ? (
-        <Button size="sm" variant="secondary" disabled={busy} onClick={onAdd}>
+        <Button size="sm" variant="accent" disabled={busy} onClick={onAdd}>
           Add
         </Button>
       ) : (
-        <span className="shrink-0 text-xs text-muted">Not yet</span>
+        <span className="shrink-0 text-[13px] text-muted">Not yet</span>
       )}
     </div>
   );

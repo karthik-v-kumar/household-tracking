@@ -21,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { listColor, listIcon, LIST_COLOR_CLASS } from "@/lib/icons";
 import {
   addListItem,
   addUsualsToList,
@@ -255,8 +254,6 @@ function ListBody({
   }
 
   const { list, items, usuals: usualCatalog } = detail.data;
-  const Icon = listIcon(list.icon);
-  const color = listColor(list.color);
   const held = new Set(heldInPlace);
   const openItems = items.filter((item) => item.checked === held.has(item.id));
   const bought = items.filter((item) => item.checked !== held.has(item.id));
@@ -272,28 +269,20 @@ function ListBody({
       title={list.name}
       stat={
         openItems.length
-          ? `${openItems.length} to buy${bought.length ? ` · ${bought.length} in the cart` : ""}`
+          ? `${openItems.length} to buy${bought.length ? ` · ${bought.length} bought` : ""}`
           : items.length
-            ? "All checked"
+            ? `${bought.length} bought · nothing left to pick up`
             : "Empty — add this week's run"
       }
       back={
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            to="/"
-            aria-label="Back to lists"
-            className="civic-link inline-flex items-center gap-1 text-sm text-muted hover:text-fg"
-          >
-            <ChevronLeft className="size-4" />
-            Lists
-          </Link>
-          <div
-            className={`grid size-8 place-items-center rounded-full text-primary-fg ${LIST_COLOR_CLASS[color]}`}
-            aria-hidden="true"
-          >
-            <Icon className="size-4" />
-          </div>
-        </div>
+        <Link
+          to="/"
+          aria-label="Back to lists"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] pr-2.5 text-[15px] font-medium text-fg-2"
+        >
+          <ChevronLeft className="size-3.5" strokeWidth={1.7} />
+          Lists
+        </Link>
       }
       actions={
         <DropdownMenu>
@@ -377,7 +366,12 @@ function ListBody({
           />
         ) : (
           <>
-            <div className="panel overflow-hidden">
+            <div className="border-t border-hairline">
+              {openItems.length ? (
+                <p className="kicker py-3">
+                  To buy · {openItems.length}
+                </p>
+              ) : null}
               {openItems.map((item) => (
                 <ItemRow
                   key={item.id}
@@ -388,26 +382,22 @@ function ListBody({
                 />
               ))}
               {openItems.length === 0 ? (
-                <div className="grid gap-3 px-5 py-6 text-center">
-                  <p className="text-sm text-muted">Cart is clear. Nice.</p>
-                  <div className="flex flex-wrap justify-center gap-2">
+                <div className="panel mt-2 px-5 py-6">
+                  <p className="text-[22px] font-semibold tracking-[-0.02em]">Cart is clear</p>
+                  <p className="mt-1 text-sm text-muted">Add usuals for the next run, or clear bought items</p>
+                  <div className="mt-4 grid gap-2">
+                    {usualCatalog.length > 0 ? (
+                      <Button disabled={busyShop} onClick={() => nextShop.mutate()}>
+                        Add usuals
+                      </Button>
+                    ) : null}
                     {bought.length > 0 ? (
                       <Button
-                        size="sm"
                         variant="secondary"
                         disabled={busyShop}
                         onClick={() => clearBought.mutate()}
                       >
                         Clear bought
-                      </Button>
-                    ) : null}
-                    {usualCatalog.length > 0 ? (
-                      <Button
-                        size="sm"
-                        disabled={busyShop}
-                        onClick={() => nextShop.mutate()}
-                      >
-                        Next shop — add usuals
                       </Button>
                     ) : null}
                   </div>
@@ -416,20 +406,18 @@ function ListBody({
             </div>
             {bought.length > 0 ? (
               <section className="mt-6">
-                <div className="flex items-center justify-between gap-3 px-1">
-                  <h2 className="text-xs font-medium tracking-[0.16em] text-muted uppercase">
-                    Bought
-                  </h2>
-                  <Button
-                    size="sm"
-                    variant="ghost"
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="kicker">Bought · {bought.length}</h2>
+                  <button
+                    type="button"
+                    className="text-[13.5px] font-medium text-muted"
                     disabled={clearBought.isPending}
                     onClick={() => clearBought.mutate()}
                   >
                     Clear
-                  </Button>
+                  </button>
                 </div>
-                <div className="panel mt-2 overflow-hidden">
+                <div className="mt-1 border-t border-hairline">
                   {bought.map((item) => (
                     <ItemRow
                       key={item.id}

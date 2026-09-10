@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QUICK_FILTERS, REPLACE_INTERVALS, STOCK_LEAD_PRESETS } from "@/lib/constants";
-import { fromDateInput, formatShortDate, toDateInput } from "@/lib/dates";
+import { fromDateInput, toDateInput } from "@/lib/dates";
 import { DEFAULT_STOCK_LEAD_DAYS } from "@/lib/upkeep-logic";
 import { formatUpkeepDue } from "@/lib/upkeep-logic";
 import {
@@ -138,15 +138,15 @@ export function FiltersPanel({
   return (
     <>
       {needed.length > 0 ? (
-        <div className="panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
-          <p className="text-sm">
-            <span className="font-medium">
-              {needed.length} without a spare
-            </span>
-          </p>
-          <Button size="sm" variant="secondary" onClick={() => addNeeded.mutate(undefined)}>
+        <div className="mb-5 flex items-baseline justify-between gap-3">
+          <p className="text-sm">{needed.length} need a spare or a change</p>
+          <button
+            type="button"
+            className="text-[13.5px] font-semibold text-accent"
+            onClick={() => addNeeded.mutate(undefined)}
+          >
             Add all
-          </Button>
+          </button>
         </div>
       ) : null}
 
@@ -165,7 +165,7 @@ export function FiltersPanel({
           }
         />
       ) : (
-        <div className="grid gap-2.5">
+        <div className="border-t border-hairline">
           {items.map((item) => (
             <FilterCard
               key={item.id}
@@ -174,7 +174,6 @@ export function FiltersPanel({
               onReplaced={() => replaced.mutate(item.id)}
               onAdd={() => addNeeded.mutate([item.id])}
               onEdit={() => setEditing(item)}
-              onDelete={() => remove.mutate(item)}
             />
           ))}
         </div>
@@ -207,14 +206,12 @@ function FilterCard({
   onReplaced,
   onAdd,
   onEdit,
-  onDelete,
 }: {
   item: UpkeepItem;
   onSpare: (count: number) => void;
   onReplaced: () => void;
   onAdd: () => void;
   onEdit: () => void;
-  onDelete: () => void;
 }) {
   const tone =
     item.status === "due" ? "danger" : item.status === "soon" ? "warn" : item.status === "buy" ? "warn" : "ok";
@@ -226,71 +223,58 @@ function FilterCard({
         : item.status === "buy"
           ? "Need spare"
           : "On track";
-  const lastChanged = formatShortDate(item.lastReplacedAt);
 
   return (
-    <article className="panel p-4">
+    <article className="border-b border-hairline py-4">
       <div className="flex items-start justify-between gap-3">
         <button type="button" className="min-w-0 text-left" onClick={onEdit}>
-          <h3 className="truncate font-display font-medium">{item.name}</h3>
-          <p className="mt-0.5 text-xs text-muted">
+          <h3 className="truncate text-base font-medium tracking-[-0.012em]">{item.name}</h3>
+          <p className="mt-0.5 text-[13px] text-muted">
             {intervalLabel(item.intervalDays)}
             {item.qtyNeeded > 1 ? ` · ${item.qtyNeeded} each time` : ""}
+            {` · ${formatUpkeepDue(item.daysUntil)}`}
           </p>
-          <p className="mt-0.5 text-xs text-muted">{formatUpkeepDue(item.daysUntil)}</p>
-          {lastChanged ? <p className="mt-0.5 text-xs text-subtle">Last changed {lastChanged}</p> : null}
-          {!item.needToBuy && item.spareCount < item.qtyNeeded && item.stockFromAt ? (
-            <p className="mt-0.5 text-xs text-subtle">
-              Stock from {formatShortDate(item.stockFromAt)}
-            </p>
-          ) : null}
         </button>
         <Badge tone={tone}>{badge}</Badge>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">On the shelf</p>
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon-sm"
-            variant="secondary"
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-[13px] text-muted">On the shelf</p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
             aria-label="Fewer on the shelf"
             disabled={item.spareCount <= 0}
             onClick={() => onSpare(item.spareCount - 1)}
+            className="grid size-[30px] place-items-center rounded-full border border-hairline text-fg-2 disabled:opacity-30"
           >
             <Minus className="size-3.5" />
-          </Button>
-          <span className="w-6 text-center text-sm font-medium tabular-nums">{item.spareCount}</span>
-          <Button
-            size="icon-sm"
-            variant="secondary"
+          </button>
+          <span className="w-6 text-center text-[17px] font-semibold tabular-nums">{item.spareCount}</span>
+          <button
+            type="button"
             aria-label="More on the shelf"
             onClick={() => onSpare(item.spareCount + 1)}
+            className="grid size-[30px] place-items-center rounded-full border border-hairline text-fg-2"
           >
             <Plus className="size-3.5" />
-          </Button>
+          </button>
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <Button size="sm" variant="secondary" className="flex-1" onClick={onReplaced}>
-          Replaced
+      <div className="mt-3 flex items-center gap-3">
+        <Button size="sm" className="h-8 rounded-full px-3.5" onClick={onReplaced}>
+          Mark replaced
         </Button>
-        <Button
-          size="sm"
-          variant={item.needToBuy ? "default" : "secondary"}
-          className="flex-1"
-          disabled={item.onAList || !item.needToBuy}
-          onClick={onAdd}
-        >
-          {item.onAList ? "On a list" : item.needToBuy ? "Add to list" : item.spareCount >= item.qtyNeeded ? "Stocked" : "Not yet"}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onEdit}>
-          Edit
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onDelete}>
-          Remove
-        </Button>
+        {item.needToBuy && !item.onAList ? (
+          <Button size="sm" variant="secondary" className="h-8 rounded-full px-3.5" onClick={onAdd}>
+            Add to list
+          </Button>
+        ) : (
+          <button type="button" className="text-[13.5px] font-medium text-muted" onClick={onEdit}>
+            Edit
+          </button>
+        )}
       </div>
     </article>
   );
@@ -508,7 +492,7 @@ export function FilterSegment({
   dueCount: number;
 }) {
   return (
-    <div className="mb-5 flex rounded-full border border-border bg-bg-elevated p-1">
+    <div className="mb-5 flex h-9 rounded-[10px] bg-fill-quiet p-[3px]">
       {(
         [
           { id: "pantry", label: "Pantry" },
@@ -520,8 +504,8 @@ export function FilterSegment({
           type="button"
           onClick={() => onChange(row.id)}
           className={cn(
-            "flex-1 rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-200",
-            view === row.id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg",
+            "flex-1 rounded-sm text-[13.5px] font-semibold transition-colors duration-[180ms]",
+            view === row.id ? "bg-surface text-fg shadow-[0_1px_2px_rgba(21,19,15,0.08)]" : "text-muted",
           )}
         >
           {row.label}

@@ -26,8 +26,8 @@ export function Stepper({
 
   return (
     <div className="grid gap-1.5">
-      <p className="text-sm font-medium">{label}</p>
-      <div className="flex h-11 items-center justify-between gap-1 rounded-md border border-border bg-bg px-1">
+      <p className="kicker">{label}</p>
+      <div className="flex h-12 items-center justify-between gap-1 rounded-xl bg-fill-quiet px-1">
         <Button
           type="button"
           size="icon-sm"
@@ -47,7 +47,7 @@ export function Stepper({
               max={max}
               value={Number.isFinite(value) ? value : ""}
               onChange={(event) => onChange(clamp(Number(event.target.value)))}
-              className="h-9 w-20 border-0 bg-transparent px-0 text-center text-sm font-medium tabular-nums shadow-none focus-visible:ring-0"
+              className="h-9 w-20 border-0 bg-transparent px-0 text-center text-[17px] font-semibold tabular-nums shadow-none focus-visible:ring-0"
             />
             {suffix ? <span className="text-xs text-muted">{suffix}</span> : null}
           </div>

@@ -81,7 +81,7 @@ export function ItemRow({
       </div>
       <div
         className={cn(
-          "swipe-row-front flex h-14 items-center gap-3 px-4",
+          "swipe-row-front flex h-14 items-center gap-3 px-0",
           item.checked && "is-checked",
           snapping && "transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
         )}
@@ -134,10 +134,10 @@ export function ItemRow({
         >
           <span
             className={cn(
-              "grid size-5 place-items-center rounded-full border transition-colors duration-200",
+              "grid size-[22px] place-items-center rounded-full border-[1.5px] transition-colors duration-[180ms]",
               item.checked
                 ? "border-fg bg-fg text-primary-fg"
-                : "border-fg/25 bg-transparent text-transparent",
+                : "border-fg/20 bg-transparent text-transparent",
             )}
           >
             <Check className="size-3" strokeWidth={3} />
@@ -151,7 +151,7 @@ export function ItemRow({
           }}
           className="min-w-0 flex-1 text-left"
         >
-          <p className={cn("truncate text-[0.98rem] font-semibold tracking-tight", item.checked && "text-muted line-through")}>
+          <p className={cn("truncate text-base font-medium tracking-[-0.012em]", item.checked && "text-muted line-through")}>
             {item.name}
           </p>
         </button>
@@ -161,8 +161,10 @@ export function ItemRow({
             swiping && "pointer-events-none opacity-0",
           )}
         >
-          {item.quantity ? <span className="item-badge is-qty">{item.quantity}</span> : null}
-          {source ? <span className="item-badge">{source}</span> : null}
+          {item.quantity ? (
+            <span className="text-[13px] tabular-nums text-subtle">{item.quantity}</span>
+          ) : null}
+          {source ? <span className="status text-accent">{source}</span> : null}
           {item.isStaple ? (
             <Star className="size-3.5 shrink-0 fill-fg text-fg" />
           ) : null}

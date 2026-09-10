@@ -60,7 +60,7 @@ export function UsualsTray({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium tracking-[0.16em] text-muted uppercase">Usuals</p>
+        <p className="kicker">Usuals</p>
         <div className="flex items-center gap-3">
           {onManage ? (
             <button

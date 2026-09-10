@@ -63,12 +63,12 @@ export function AddItemBar({
         submit();
       }}
     >
-      <div className="flex items-center gap-1 rounded-full border border-border bg-bg py-1 pr-1 pl-2">
+      <div className="flex h-12 items-center gap-1 rounded-[14px] bg-surface-hi py-0 pr-1 pl-3 shadow-[0_0_0_1px_rgba(21,19,15,0.08)]">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Add milk, limes…"
-          className="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="h-12 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
           autoComplete="off"
           enterKeyHint="done"
         />
@@ -76,7 +76,7 @@ export function AddItemBar({
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="Qty"
-          className="h-12 w-14 shrink-0 border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0"
+          className="h-12 w-12 shrink-0 border-0 bg-transparent px-1 text-center text-[13px] text-subtle shadow-none focus-visible:ring-0"
           autoComplete="off"
         />
         <button
@@ -85,19 +85,19 @@ export function AddItemBar({
           aria-label="Remember as usual"
           onClick={() => setStaple((v) => !v)}
           className={cn(
-            "grid size-12 shrink-0 place-items-center rounded-full",
+            "grid size-11 shrink-0 place-items-center rounded-full",
             staple ? "text-fg" : "text-subtle hover:text-fg",
           )}
         >
-          <Star className={cn("size-5", staple && "fill-fg")} />
+          <Star className={cn("size-4", staple && "fill-fg")} />
         </button>
         <button
           type="submit"
           disabled={busy || !trimmed}
           aria-label="Add item"
-          className="grid size-12 shrink-0 place-items-center rounded-full bg-fg text-primary-fg disabled:opacity-35"
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-fg text-primary-fg disabled:opacity-35"
         >
-          <Plus className="size-6" strokeWidth={2.5} />
+          <Plus className="size-5" strokeWidth={2.4} />
         </button>
       </div>
       {open ? (

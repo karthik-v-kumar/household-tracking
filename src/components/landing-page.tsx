@@ -46,7 +46,7 @@ export function LandingPage() {
       </header>
 
       <main className="px-5 pb-[max(4.5rem,calc(2rem+env(safe-area-inset-bottom)))]">
-        <h1 className="mt-8 font-display text-[2.65rem] leading-[1.05] tracking-tight sm:text-5xl">
+        <h1 className="mt-8 font-display text-[2.125rem] leading-[1.04] font-semibold tracking-display">
           What to buy.
           <br />
           What's at home.

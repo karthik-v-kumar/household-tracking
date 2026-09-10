@@ -6,18 +6,18 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
 };
 
 const tones: Record<NonNullable<BadgeProps["tone"]>, string> = {
-  neutral: "bg-fg/6 text-muted",
-  ok: "bg-ok/12 text-ok",
-  warn: "bg-warn/12 text-warn",
-  danger: "bg-danger/12 text-danger",
-  primary: "bg-fg/8 text-fg",
+  neutral: "text-muted",
+  ok: "text-ok",
+  warn: "text-warn",
+  danger: "text-danger",
+  primary: "text-fg",
 };
 
 export function Badge({ className, tone = "neutral", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide",
+        "status inline-flex items-center",
         tones[tone],
         className,
       )}

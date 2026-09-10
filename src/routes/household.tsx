@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   leaveHousehold,
   regenerateInviteCode,
   renameHousehold,
 } from "@/lib/server/household";
 import type { Overview } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/household")({ component: HouseholdPage });
 
@@ -71,59 +71,64 @@ function HouseholdBody({ overview }: { overview: Overview }) {
       eyebrow="Household"
       stat={`${overview.members.length} member${overview.members.length === 1 ? "" : "s"} sharing lists and pantry.`}
     >
-      <section className="panel p-5">
-        <h2 className="font-display text-2xl tracking-tight">Invite</h2>
-        <p className="mt-1 text-sm text-muted">
-          Share this code. After they sign in, they join and see the same lists and pantry.
-        </p>
-        <button
-          type="button"
-          onClick={() => void copyCode()}
-          className="mt-4 flex w-full items-center justify-between rounded-md border border-border bg-bg-elevated px-4 py-3 text-left"
-        >
-          <span className="font-display text-2xl tracking-widest">
-            {overview.household.inviteCode}
-          </span>
-          <Copy className="size-4 text-muted" />
-        </button>
-        {overview.household.role === "owner" ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2"
-            onClick={() => refresh.mutate()}
-            disabled={refresh.isPending}
-          >
-            <RefreshCw className="size-3.5" />
-            New code
-          </Button>
-        ) : null}
+      <section>
+        <p className="kicker">Invite code</p>
+        <div className="mt-2.5 border-t border-hairline pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => void copyCode()}
+              className="text-left text-2xl font-semibold tracking-[0.1em] tabular-nums"
+            >
+              {overview.household.inviteCode}
+            </button>
+            <Button variant="ghost" size="icon-sm" onClick={() => void copyCode()} aria-label="Copy invite code">
+              <Copy className="size-4" />
+            </Button>
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3">
+            <p className="text-[13px] text-muted">Anyone with this code can join</p>
+            {overview.household.role === "owner" ? (
+              <button
+                type="button"
+                className="text-[13.5px] font-semibold text-accent"
+                onClick={() => refresh.mutate()}
+                disabled={refresh.isPending}
+              >
+                New code
+              </button>
+            ) : null}
+          </div>
+        </div>
       </section>
 
-      <section className="panel mt-4 p-5">
-        <h2 className="font-display text-2xl tracking-tight">Members</h2>
-        <ul className="mt-3 divide-y divide-border">
+      <section className="mt-7">
+        <p className="kicker">Members</p>
+        <ul className="mt-2.5 border-t border-hairline">
           {overview.members.map((member) => (
-            <li key={member.userId} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <li key={member.userId} className="flex h-16 items-center gap-3.5 border-b border-hairline">
               {member.imageUrl ? (
                 <img
                   src={member.imageUrl}
                   alt=""
-                  className="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-fg/10"
+                  className="size-9 rounded-full object-cover"
                 />
               ) : (
-                <span className="grid size-10 place-items-center rounded-full bg-primary/10 font-medium text-fg">
+                <span
+                  className={cn(
+                    "grid size-9 place-items-center rounded-full text-sm font-semibold",
+                    member.role === "owner" ? "bg-fg text-primary-fg" : "bg-fill-quiet text-fg",
+                  )}
+                >
                   {member.displayName.charAt(0).toUpperCase()}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">
+                <p className="truncate text-base font-medium tracking-[-0.012em]">
                   {member.displayName}
                   {member.isYou ? " (you)" : ""}
                 </p>
-                <p className="font-display text-xs tracking-wide text-muted uppercase">
-                  {member.role}
-                </p>
+                <p className="text-[13px] text-muted">{member.role === "owner" ? "Owner" : "Member"}</p>
               </div>
             </li>
           ))}
@@ -131,29 +136,29 @@ function HouseholdBody({ overview }: { overview: Overview }) {
       </section>
 
       <form
-        className="panel mt-4 p-5"
+        className="mt-7"
         onSubmit={(event) => {
           event.preventDefault();
           if (!name.trim()) return;
           rename.mutate(name.trim());
         }}
       >
-        <div className="grid gap-1.5">
-          <Label htmlFor="hh-name">Household name</Label>
+        <p className="kicker">Household name</p>
+        <div className="mt-2.5 flex gap-2">
           <Input
             id="hh-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <Button type="submit" disabled={rename.isPending || !name.trim()}>
+            Save
+          </Button>
         </div>
-        <Button type="submit" className="mt-3" disabled={rename.isPending || !name.trim()}>
-          Save name
-        </Button>
       </form>
 
-      <Button
-        variant="ghost"
-        className="mt-5 w-full text-danger"
+      <button
+        type="button"
+        className="mt-8 text-[13.5px] font-medium text-danger"
         onClick={() => {
           if (window.confirm("Leave this household? Lists stay with whoever remains.")) {
             leave.mutate();
@@ -161,7 +166,7 @@ function HouseholdBody({ overview }: { overview: Overview }) {
         }}
       >
         Leave household
-      </Button>
+      </button>
     </AppShell>
   );
 }

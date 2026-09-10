@@ -44,15 +44,15 @@ export function AppShell({
         Skip to content
       </a>
 
-      <header className="edge-top shrink-0 border-b border-hairline bg-bg px-5 pb-3">
-        <div className="flex items-center justify-between gap-3">
+      <header className="edge-top shrink-0 bg-bg px-5 pb-1">
+        <div className="flex h-12 items-center justify-between gap-3">
           <Link to="/" className="wordmark" aria-label={`${APP_NAME} home`}>
             {APP_NAME}
           </Link>
           <div className="flex shrink-0 items-center gap-1">
             {actions}
             {isPending ? (
-              <div className="size-9 animate-pulse bg-fg/8" />
+              <div className="size-9 animate-pulse bg-fill-quiet" />
             ) : (
               <>
                 <PushRegistrar />
@@ -61,31 +61,27 @@ export function AppShell({
             )}
           </div>
         </div>
-        {back ? <div className="mt-3">{back}</div> : null}
+        {back ? <div className="pb-1">{back}</div> : null}
       </header>
 
       {rail ? (
         <div className="shrink-0 border-b border-hairline bg-bg px-5 py-3">{rail}</div>
       ) : null}
 
-      <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-6">
+      <main id="main-content" className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-4">
         {eyebrow ? <p className="kicker">{eyebrow}</p> : null}
-        {title ? (
-          <h1 className="mt-1 font-display text-[2.35rem] leading-[0.95] font-extrabold tracking-tight sm:text-5xl">
-            {title}
-          </h1>
-        ) : null}
-        {stat ? <p className="mt-2 text-sm text-muted">{stat}</p> : null}
-        <div className={title || eyebrow || stat ? "mt-6" : undefined}>{children}</div>
+        {title ? <h1 className="screen-title mt-2">{title}</h1> : null}
+        {stat ? <p className="mt-1.5 text-sm text-muted">{stat}</p> : null}
+        <div className={title || eyebrow || stat ? "mt-5" : undefined}>{children}</div>
       </main>
 
       <footer
-        className="shrink-0 border-t border-hairline bg-surface"
+        className="shrink-0 border-t border-hairline bg-surface/85"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {dock ? <div className="space-y-2 border-b border-hairline px-4 pt-3 pb-2">{dock}</div> : null}
+        {dock ? <div className="space-y-2 px-5 pt-3 pb-2">{dock}</div> : null}
         <nav aria-label="Main">
-          <div className="grid grid-cols-3">
+          <div className="grid h-[62px] grid-cols-3 pt-2.5">
             {NAV.map((item) => {
               const active =
                 item.to === "/"
@@ -97,11 +93,11 @@ export function AppShell({
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 text-[0.68rem] font-bold tracking-[0.14em] uppercase",
-                    active ? "text-fg" : "text-muted",
+                    "flex flex-col items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] uppercase",
+                    active ? "text-fg" : "text-subtle",
                   )}
                 >
-                  <Icon className="size-5" strokeWidth={active ? 2.4 : 1.7} />
+                  <Icon className="size-[21px]" strokeWidth={1.7} />
                   {item.label}
                 </Link>
               );

@@ -43,7 +43,7 @@ export const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[70] bg-fg/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[70] bg-fg/35 backdrop-blur-[3px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -67,8 +67,9 @@ export const DialogContent = forwardRef<
         )}
         {...props}
       >
+        <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-fg/15" aria-hidden="true" />
         <div className="dialog-sheet-body">{children}</div>
-        <DialogPrimitive.Close className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-muted hover:bg-fg/6 hover:text-fg">
+        <DialogPrimitive.Close className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-fill-quiet text-muted hover:text-fg">
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -88,7 +89,7 @@ export function DialogTitle({
 }: ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn("font-display text-2xl tracking-tight text-fg", className)}
+      className={cn("font-display text-[22px] font-semibold tracking-[-0.02em] text-fg", className)}
       {...props}
     />
   );

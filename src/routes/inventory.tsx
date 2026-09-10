@@ -177,11 +177,11 @@ function InventoryBody() {
       stat={
         view === "filters"
           ? dueFilters
-            ? `${dueFilters} need a spare or a change.`
-            : "Replacement schedule and whether you have one on the shelf."
+            ? `${dueFilters} need a spare or a change`
+            : "Replacement schedule and whether you have one on the shelf"
           : low.length
-            ? `${low.length} running low — add them before the weekend run.`
-            : "Track bulk items. We'll nudge you when a pack is nearly gone."
+            ? `${low.length} running low before the weekend run`
+            : "Track bulk items. We'll nudge you when a pack is nearly gone"
       }
       actions={
         <Button
@@ -208,13 +208,17 @@ function InventoryBody() {
       ) : (
         <>
           {low.length > 0 ? (
-            <div className="panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
-              <p className="text-sm">
-                <span className="font-medium">{low.length} running low</span>
+            <div className="mb-5 flex items-baseline justify-between gap-3">
+              <p className="text-sm text-fg">
+                {low.length} item{low.length === 1 ? "" : "s"} running low
               </p>
-              <Button size="sm" variant="secondary" onClick={() => addLow.mutate(undefined)}>
+              <button
+                type="button"
+                className="text-[13.5px] font-semibold text-accent"
+                onClick={() => addLow.mutate(undefined)}
+              >
                 Add all
-              </Button>
+              </button>
             </div>
           ) : null}
 
@@ -233,7 +237,7 @@ function InventoryBody() {
               }
             />
           ) : (
-            <div className="grid gap-2.5">
+            <div className="border-t border-hairline">
               {orderedItems.map((item) => (
                 <InventoryCard
                   key={item.id}
@@ -244,7 +248,6 @@ function InventoryBody() {
                     setEditing(item);
                     setOpen(true);
                   }}
-                  onDelete={() => remove.mutate(item)}
                 />
               ))}
             </div>
@@ -272,13 +275,11 @@ function InventoryCard({
   onLevel,
   onAdd,
   onEdit,
-  onDelete,
 }: {
   item: InventoryItem;
   onLevel: (level: InventoryLevel) => void;
   onAdd: () => void;
   onEdit: () => void;
-  onDelete: () => void;
 }) {
   const tone =
     item.effectiveLevel === "out"
@@ -290,17 +291,19 @@ function InventoryCard({
           : "neutral";
   const estimate =
     item.typicalDays && item.daysSinceRestock != null
-      ? `Last restocked ${item.daysSinceRestock}d ago · usually lasts ${item.typicalDays}d`
+      ? `Restocked ${item.daysSinceRestock}d ago · lasts ~${item.typicalDays}d`
       : item.typicalDays
-        ? `Usually lasts ${item.typicalDays} days`
+        ? `Usually lasts ${item.typicalDays}d`
         : "Set a typical lifespan to get a heads-up";
+  const store = item.defaultListName ?? "list";
+  const needsBuy = item.effectiveLevel === "low" || item.effectiveLevel === "out";
 
   return (
-    <article className="panel p-4">
+    <article className="border-b border-hairline py-4">
       <div className="flex items-start justify-between gap-3">
         <button type="button" className="min-w-0 text-left" onClick={onEdit}>
-          <h3 className="truncate font-display font-medium">{item.name}</h3>
-          <p className="mt-0.5 text-xs text-muted">{estimate}</p>
+          <h3 className="truncate text-base font-medium tracking-[-0.012em]">{item.name}</h3>
+          <p className="mt-0.5 text-[13px] text-muted">{estimate}</p>
         </button>
         <Badge tone={tone}>
           {item.effectiveLevel === "out"
@@ -308,33 +311,26 @@ function InventoryCard({
             : item.effectiveLevel === "low"
               ? "Low"
               : item.effectiveLevel === "full"
-                ? "Full"
+                ? "On track"
                 : "Okay"}
         </Badge>
       </div>
-      <div className="mt-4">
+      <div className="mt-3">
         <LevelMeter level={item.level} onChange={onLevel} />
-        <div className="mt-1.5 flex justify-between font-display text-xs tracking-wide text-subtle uppercase">
-          <span>Out</span>
-          <span>Full</span>
-        </div>
       </div>
-      <div className="mt-4 flex gap-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          className="flex-1"
-          disabled={item.onAList}
-          onClick={onAdd}
-        >
-          {item.onAList ? "On a list" : "Add to list"}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onEdit}>
+      <div className="mt-3 flex items-center gap-3">
+        {needsBuy && !item.onAList ? (
+          <Button size="sm" className="h-8 rounded-full px-3.5" onClick={onAdd}>
+            Add to {store}
+          </Button>
+        ) : (
+          <Button size="sm" variant="secondary" className="h-8 rounded-full px-3.5" disabled={item.onAList} onClick={onAdd}>
+            {item.onAList ? `On the ${store} list` : `Add to ${store}`}
+          </Button>
+        )}
+        <button type="button" className="text-[13.5px] font-medium text-muted" onClick={onEdit}>
           Edit
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onDelete}>
-          Remove
-        </Button>
+        </button>
       </div>
     </article>
   );

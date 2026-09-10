@@ -71,8 +71,8 @@ export function LoginScreen({ initialMode = "signin" }: { initialMode?: "signin"
           </figure>
 
           <div className="overlay-surface relative z-10 -mt-16 mx-2 p-5 sm:mx-4">
-            <h1 className="font-display text-3xl leading-[1.1] tracking-tight">
-              {mode === "signup" ? "Start the household." : "The lists you both keep."}
+            <h1 className="text-[22px] font-semibold tracking-[-0.02em]">
+              {mode === "signup" ? "Start the household" : "The lists you both keep"}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               {mode === "signup"
