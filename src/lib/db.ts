@@ -229,6 +229,7 @@ export function ensureDbReady(): Promise<void> {
 const globalBoot = globalThis as typeof globalThis & {
   __pgBootstrapPromise__?: Promise<void>;
 };
+// Pending SQL files in migrations/ are applied on the next server-side getSql().
 if (typeof window === "undefined" && dbSource === "pglite") {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
@@ -236,3 +237,4 @@ if (typeof window === "undefined" && dbSource === "pglite") {
     throw err;
   });
 }
+

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ import { PushSettingsItem } from "@/components/push-opt-in";
 
 export function SettingsMenu() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
   const [nameOpen, setNameOpen] = useState(false);
@@ -79,6 +81,14 @@ export function SettingsMenu() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <PushSettingsItem />
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => {
+              void navigate({ to: "/household", hash: "agent-keys" });
+            }}
+          >
+            Agent API keys
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             danger
