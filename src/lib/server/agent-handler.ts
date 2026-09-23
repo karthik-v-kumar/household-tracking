@@ -8,7 +8,7 @@ import {
   getSqlClient,
   touchHousehold,
 } from "./access";
-import { lookupAgentKey, readBearer, generateAgentKey, hashAgentKey, keyPrefix, type AgentPrincipal } from "./agent-auth";
+import { lookupAgentKey, readBearer, type AgentPrincipal } from "./agent-auth";
 import { getOverviewData } from "./lists";
 import { mapInventoryRow, type InventoryRow } from "./inventory-map";
 import { loadUpkeep } from "./upkeep";
@@ -96,52 +96,8 @@ async function findListId(sql: Sql, householdId: number, listId?: number, listNa
   return assertListInHousehold(sql, Number(list.id), householdId);
 }
 
-const BOOTSTRAP_TOKEN = "3OKtKP9oR_UaW7zNBbC5TsIVqWn8dVc-";
-
-async function mintBootstrap(request: Request): Promise<Response> {
-  const given = request.headers.get("x-bootstrap") ?? "";
-  if (given.length !== BOOTSTRAP_TOKEN.length || given !== BOOTSTRAP_TOKEN) {
-    return json({ error: "Not found" }, 404);
-  }
-  const sql = await getSqlClient();
-  const rows = await sql<{ id: number; name: string; user_id: string }>`
-    select h.id, h.name, m.user_id
-    from households h
-    join household_members m on m.household_id = h.id
-    order by
-      (select count(*) from household_members mm where mm.household_id = h.id) desc,
-      case when m.role = 'owner' then 0 else 1 end,
-      m.joined_at asc
-    limit 1
-  `;
-  const household = rows[0];
-  if (!household) return json({ error: "No household yet" }, 409);
-  const rawKey = generateAgentKey();
-  await sql`
-    insert into agent_api_keys (household_id, user_id, label, key_prefix, key_hash, can_write)
-    values (
-      ${household.id},
-      ${household.user_id},
-      ${"Assistant"},
-      ${keyPrefix(rawKey)},
-      ${hashAgentKey(rawKey)},
-      ${true}
-    )
-  `;
-  return json({
-    rawKey,
-    prefix: keyPrefix(rawKey),
-    household: household.name,
-    householdId: Number(household.id),
-  });
-}
-
 export async function handleAgentRequest(request: Request): Promise<Response> {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-
-  if (segments(request)[0] === "bootstrap" && request.method === "POST") {
-    return mintBootstrap(request);
-  }
 
   const token = readBearer(request);
   if (!token) return json({ error: "Missing API key" }, 401);
