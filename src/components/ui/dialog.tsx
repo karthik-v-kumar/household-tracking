@@ -12,28 +12,47 @@ export const DialogPortal = DialogPrimitive.Portal;
 function useVisualViewportVars() {
   useEffect(() => {
     const root = document.documentElement;
-    const vv = window.visualViewport;
     const apply = () => {
-      const height = vv?.height ?? window.innerHeight;
+      const vv = window.visualViewport;
+      const layout = window.innerHeight;
+      const height = vv?.height ?? layout;
       const top = vv?.offsetTop ?? 0;
-      const bottom = Math.max(0, window.innerHeight - top - height);
+      const bottom = Math.max(0, layout - height - top);
       root.style.setProperty("--vv-top", `${Math.round(top)}px`);
       root.style.setProperty("--vv-height", `${Math.round(height)}px`);
       root.style.setProperty("--vv-bottom", `${Math.round(bottom)}px`);
     };
     apply();
+    const vv = window.visualViewport;
     vv?.addEventListener("resize", apply);
     vv?.addEventListener("scroll", apply);
+    window.addEventListener("resize", apply);
     window.addEventListener("orientationchange", apply);
+    window.addEventListener("focusin", apply);
+    window.addEventListener("focusout", apply);
     return () => {
       vv?.removeEventListener("resize", apply);
       vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("resize", apply);
       window.removeEventListener("orientationchange", apply);
+      window.removeEventListener("focusin", apply);
+      window.removeEventListener("focusout", apply);
       root.style.removeProperty("--vv-top");
       root.style.removeProperty("--vv-height");
       root.style.removeProperty("--vv-bottom");
     };
   }, []);
+}
+
+function scrollFieldIntoView(event: React.FocusEvent<HTMLDivElement>) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && target.tagName !== "SELECT") {
+    return;
+  }
+  window.setTimeout(() => {
+    target.scrollIntoView({ block: "center", inline: "nearest" });
+  }, 80);
 }
 
 export const DialogOverlay = forwardRef<
@@ -68,7 +87,9 @@ export const DialogContent = forwardRef<
         {...props}
       >
         <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-fg/15" aria-hidden="true" />
-        <div className="dialog-sheet-body">{children}</div>
+        <div className="dialog-sheet-body" onFocusCapture={scrollFieldIntoView}>
+          {children}
+        </div>
         <DialogPrimitive.Close className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-fill-quiet text-muted hover:text-fg">
           <X className="size-4" />
           <span className="sr-only">Close</span>

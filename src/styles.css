@@ -257,10 +257,10 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--vv-bottom, 0px);
     top: auto;
     width: auto;
-    max-height: calc(var(--vv-height) - 12px);
+    max-height: calc(var(--vv-height, 100dvh) - 12px);
     transform: none;
     border-radius: 26px 26px 0 0;
     box-shadow: var(--shadow-sheet);
@@ -270,6 +270,7 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 8px 20px 28px;
     padding-bottom: calc(28px + env(safe-area-inset-bottom));
   }
