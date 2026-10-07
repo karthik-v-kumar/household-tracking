@@ -2,10 +2,18 @@
 
 Shared household grocery lists, pantry inventory, and replacement filters.
 
+**[Live demo](https://stocked.grok.me)** — open the app, or add it to an iPhone Home Screen.
+
 Built for a two-person household that was using iPhone Reminders — and tired of
 re-adding the same weekend items, splitting lists by store, forgetting when bulk
 goods like toilet paper were running out, and losing track of furnace and Tesla
 cabin filters.
+
+## Live demo
+
+[stocked.grok.me](https://stocked.grok.me)
+
+Sign in with Google, X, or email. On iPhone, use Share → Add to Home Screen so it opens like an app.
 
 ## What it does
 
